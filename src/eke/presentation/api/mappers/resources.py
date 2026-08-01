@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from eke.domain.identity import BusinessIdentifier, ResourceUUID
+from eke.domain.repositories import ResourceSearchPage
 from eke.domain.resources import Resource
 from eke.presentation.api.schemas import (
     BusinessIdentifierSchema,
     ResourceCreateRequest,
     ResourceResponse,
+    ResourceSearchResponse,
     ResourceUpdateRequest,
 )
 
@@ -15,7 +17,6 @@ from eke.presentation.api.schemas import (
 def resource_from_create(
     request: ResourceCreateRequest,
 ) -> Resource:
-    """Create a new Resource aggregate from an HTTP request."""
     if not isinstance(request, ResourceCreateRequest):
         raise TypeError(
             "request must be a ResourceCreateRequest"
@@ -35,7 +36,6 @@ def resource_from_update(
     existing: Resource,
     request: ResourceUpdateRequest,
 ) -> Resource:
-    """Apply editable HTTP fields while preserving rich state."""
     if not isinstance(existing, Resource):
         raise TypeError("existing must be a Resource")
     if not isinstance(request, ResourceUpdateRequest):
@@ -61,7 +61,6 @@ def resource_from_update(
 def resource_to_response(
     resource: Resource,
 ) -> ResourceResponse:
-    """Convert a Resource aggregate to its HTTP representation."""
     if not isinstance(resource, Resource):
         raise TypeError("resource must be a Resource")
 
@@ -76,6 +75,26 @@ def resource_to_response(
         ],
         resource_type=resource.resource_type,
         status=resource.status,
+    )
+
+
+def resource_page_to_response(
+    page: ResourceSearchPage,
+) -> ResourceSearchResponse:
+    """Convert a domain search page to an HTTP response."""
+    if not isinstance(page, ResourceSearchPage):
+        raise TypeError(
+            "page must be a ResourceSearchPage"
+        )
+
+    return ResourceSearchResponse(
+        items=[
+            resource_to_response(resource)
+            for resource in page.items
+        ],
+        total=page.total,
+        limit=page.limit,
+        offset=page.offset,
     )
 
 

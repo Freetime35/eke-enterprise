@@ -1,3 +1,5 @@
+"""Transactional application service for Resources."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -8,30 +10,48 @@ from eke.application.resources.exceptions import (
 )
 from eke.application.unit_of_work import UnitOfWork
 from eke.domain.identity import BusinessIdentifier, ResourceUUID
+from eke.domain.repositories import (
+    ResourceSearchCriteria,
+    ResourceSearchPage,
+)
 from eke.domain.resources import Resource
 
 
 class ResourceService:
-    """Coordinate transactional application use cases for Resources."""
+    """Coordinate transactional Resource use cases."""
 
-    def __init__(self, unit_of_work_factory: Callable[[], UnitOfWork]) -> None:
+    def __init__(
+        self,
+        unit_of_work_factory: Callable[[], UnitOfWork],
+    ) -> None:
         if not callable(unit_of_work_factory):
-            raise TypeError("unit_of_work_factory must be callable")
+            raise TypeError(
+                "unit_of_work_factory must be callable"
+            )
         self._unit_of_work_factory = unit_of_work_factory
 
     def create(self, resource: Resource) -> None:
         self._validate_resource(resource)
 
         with self._unit_of_work_factory() as uow:
-            if uow.resources.exists(resource.resource_uuid):
+            if uow.resources.exists(
+                resource.resource_uuid
+            ):
                 raise ResourceAlreadyExistsError(
-                    f"resource already exists: {resource.resource_uuid}"
+                    "resource already exists: "
+                    f"{resource.resource_uuid}"
                 )
 
             for identifier in resource.identifiers:
-                if uow.resources.get_by_identifier(identifier) is not None:
+                if (
+                    uow.resources.get_by_identifier(
+                        identifier
+                    )
+                    is not None
+                ):
                     raise ResourceAlreadyExistsError(
-                        "resource already exists for business identifier: "
+                        "resource already exists for "
+                        "business identifier: "
                         f"{identifier}"
                     )
 
@@ -56,38 +76,67 @@ class ResourceService:
         self._validate_identifier(identifier)
 
         with self._unit_of_work_factory() as uow:
-            resource = uow.resources.get_by_identifier(identifier)
+            resource = (
+                uow.resources.get_by_identifier(identifier)
+            )
             if resource is None:
                 raise ResourceNotFoundError(
-                    "resource not found for business identifier: "
-                    f"{identifier}"
+                    "resource not found for business "
+                    f"identifier: {identifier}"
                 )
             return resource
+
+    def search(
+        self,
+        criteria: ResourceSearchCriteria,
+    ) -> ResourceSearchPage:
+        """Return a filtered, stable page of Resources."""
+        if not isinstance(
+            criteria,
+            ResourceSearchCriteria,
+        ):
+            raise TypeError(
+                "criteria must be a ResourceSearchCriteria"
+            )
+
+        with self._unit_of_work_factory() as uow:
+            return uow.resources.search(criteria)
 
     def update(self, resource: Resource) -> None:
         self._validate_resource(resource)
 
         with self._unit_of_work_factory() as uow:
-            if not uow.resources.exists(resource.resource_uuid):
+            if not uow.resources.exists(
+                resource.resource_uuid
+            ):
                 raise ResourceNotFoundError(
-                    f"resource not found: {resource.resource_uuid}"
+                    "resource not found: "
+                    f"{resource.resource_uuid}"
                 )
 
             for identifier in resource.identifiers:
-                existing = uow.resources.get_by_identifier(identifier)
+                existing = (
+                    uow.resources.get_by_identifier(
+                        identifier
+                    )
+                )
                 if (
                     existing is not None
-                    and existing.resource_uuid != resource.resource_uuid
+                    and existing.resource_uuid
+                    != resource.resource_uuid
                 ):
                     raise ResourceAlreadyExistsError(
-                        "business identifier belongs to another resource: "
-                        f"{identifier}"
+                        "business identifier belongs to "
+                        f"another resource: {identifier}"
                     )
 
             uow.resources.save(resource)
             uow.commit()
 
-    def delete(self, resource_uuid: ResourceUUID) -> None:
+    def delete(
+        self,
+        resource_uuid: ResourceUUID,
+    ) -> None:
         self._validate_resource_uuid(resource_uuid)
 
         with self._unit_of_work_factory() as uow:
@@ -97,7 +146,10 @@ class ResourceService:
                 )
             uow.commit()
 
-    def exists(self, resource_uuid: ResourceUUID) -> bool:
+    def exists(
+        self,
+        resource_uuid: ResourceUUID,
+    ) -> bool:
         self._validate_resource_uuid(resource_uuid)
         with self._unit_of_work_factory() as uow:
             return uow.resources.exists(resource_uuid)
@@ -105,14 +157,27 @@ class ResourceService:
     @staticmethod
     def _validate_resource(resource: Resource) -> None:
         if not isinstance(resource, Resource):
-            raise TypeError("resource must be a Resource")
+            raise TypeError(
+                "resource must be a Resource"
+            )
 
     @staticmethod
-    def _validate_resource_uuid(resource_uuid: ResourceUUID) -> None:
+    def _validate_resource_uuid(
+        resource_uuid: ResourceUUID,
+    ) -> None:
         if not isinstance(resource_uuid, ResourceUUID):
-            raise TypeError("resource_uuid must be a ResourceUUID")
+            raise TypeError(
+                "resource_uuid must be a ResourceUUID"
+            )
 
     @staticmethod
-    def _validate_identifier(identifier: BusinessIdentifier) -> None:
-        if not isinstance(identifier, BusinessIdentifier):
-            raise TypeError("identifier must be a BusinessIdentifier")
+    def _validate_identifier(
+        identifier: BusinessIdentifier,
+    ) -> None:
+        if not isinstance(
+            identifier,
+            BusinessIdentifier,
+        ):
+            raise TypeError(
+                "identifier must be a BusinessIdentifier"
+            )

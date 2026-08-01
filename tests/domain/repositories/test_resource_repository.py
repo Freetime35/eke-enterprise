@@ -9,7 +9,11 @@ from eke.domain.identity import (
     IdentifierScheme,
     ResourceUUID,
 )
-from eke.domain.repositories import ResourceRepository
+from eke.domain.repositories import (
+    ResourceRepository,
+    ResourceSearchCriteria,
+    ResourceSearchPage,
+)
 from eke.domain.resources import Resource
 
 
@@ -65,6 +69,33 @@ class InMemoryResourceRepository:
 
     def delete(self, resource_uuid: ResourceUUID) -> bool:
         return self.resources.pop(resource_uuid, None) is not None
+
+    def search(
+        self,
+        criteria: ResourceSearchCriteria,
+    ) -> ResourceSearchPage:
+        if not isinstance(criteria, ResourceSearchCriteria):
+            raise TypeError(
+                "criteria must be a ResourceSearchCriteria"
+            )
+
+        ordered = tuple(
+            sorted(
+                self.resources.values(),
+                key=lambda resource: str(resource.resource_uuid),
+            )
+        )
+        page_items = ordered[
+            criteria.offset:
+            criteria.offset + criteria.limit
+        ]
+
+        return ResourceSearchPage(
+            items=page_items,
+            total=len(ordered),
+            limit=criteria.limit,
+            offset=criteria.offset,
+        )
 
 
 def test_structural_implementation_satisfies_protocol() -> None:
@@ -146,6 +177,36 @@ def test_delete_returns_false_for_missing_resource() -> None:
     repository: ResourceRepository = InMemoryResourceRepository()
 
     assert not repository.delete(ResourceUUID.generate())
+
+
+def test_search_returns_stable_page() -> None:
+    repository: ResourceRepository = InMemoryResourceRepository()
+    high = make_resource(
+        resource_uuid=ResourceUUID.from_string(
+            "00000000-0000-0000-0000-000000000010"
+        ),
+        identifier=make_identifier("HIGH"),
+    )
+    low = make_resource(
+        resource_uuid=ResourceUUID.from_string(
+            "00000000-0000-0000-0000-000000000001"
+        ),
+        identifier=make_identifier("LOW"),
+    )
+    repository.save(high)
+    repository.save(low)
+
+    page = repository.search(
+        ResourceSearchCriteria(
+            limit=1,
+            offset=1,
+        )
+    )
+
+    assert page.total == 2
+    assert page.limit == 1
+    assert page.offset == 1
+    assert page.items == (high,)
 
 
 def test_repository_protocol_has_no_runtime_dependency() -> None:

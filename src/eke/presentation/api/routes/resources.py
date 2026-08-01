@@ -1,4 +1,4 @@
-"""Resource CRUD HTTP endpoints."""
+"""Resource CRUD and search HTTP endpoints."""
 
 from __future__ import annotations
 
@@ -19,17 +19,21 @@ from eke.domain.identity import (
     IdentifierScheme,
     ResourceUUID,
 )
+from eke.domain.repositories import ResourceSearchCriteria
+from eke.domain.resources import ResourceStatus, ResourceType
 from eke.presentation.api.dependencies import (
     get_resource_service,
 )
 from eke.presentation.api.mappers import (
     resource_from_create,
     resource_from_update,
+    resource_page_to_response,
     resource_to_response,
 )
 from eke.presentation.api.schemas import (
     ResourceCreateRequest,
     ResourceResponse,
+    ResourceSearchResponse,
     ResourceUpdateRequest,
 )
 
@@ -55,13 +59,52 @@ def create_resource(
     service: ResourceServiceDependency,
     response: Response,
 ) -> ResourceResponse:
-    """Create and return a Resource aggregate."""
     resource = resource_from_create(request)
     service.create(resource)
     response.headers["Location"] = (
         f"/resources/{resource.resource_uuid}"
     )
     return resource_to_response(resource)
+
+
+@router.get(
+    "",
+    response_model=ResourceSearchResponse,
+    summary="Search resources",
+)
+def search_resources(
+    service: ResourceServiceDependency,
+    identifier_scheme: Annotated[
+        IdentifierScheme | None,
+        Query(),
+    ] = None,
+    resource_type: Annotated[
+        ResourceType | None,
+        Query(),
+    ] = None,
+    resource_status: Annotated[
+        ResourceStatus | None,
+        Query(alias="status"),
+    ] = None,
+    limit: Annotated[
+        int,
+        Query(ge=1, le=100),
+    ] = 20,
+    offset: Annotated[
+        int,
+        Query(ge=0),
+    ] = 0,
+) -> ResourceSearchResponse:
+    page = service.search(
+        ResourceSearchCriteria(
+            identifier_scheme=identifier_scheme,
+            resource_type=resource_type,
+            status=resource_status,
+            limit=limit,
+            offset=offset,
+        )
+    )
+    return resource_page_to_response(page)
 
 
 @router.get(
@@ -74,7 +117,6 @@ def get_resource_by_identifier(
     scheme: Annotated[IdentifierScheme, Query()],
     value: Annotated[str, Query(min_length=1)],
 ) -> ResourceResponse:
-    """Return a Resource using an external identifier."""
     resource = service.find_by_identifier(
         BusinessIdentifier(scheme, value)
     )
@@ -90,7 +132,6 @@ def get_resource(
     resource_uuid: str,
     service: ResourceServiceDependency,
 ) -> ResourceResponse:
-    """Return a Resource by internal UUID."""
     resource = service.get(
         _parse_resource_uuid(resource_uuid)
     )
@@ -107,7 +148,6 @@ def update_resource(
     request: ResourceUpdateRequest,
     service: ResourceServiceDependency,
 ) -> ResourceResponse:
-    """Update editable Resource fields."""
     parsed_uuid = _parse_resource_uuid(resource_uuid)
     existing = service.get(parsed_uuid)
     updated = resource_from_update(existing, request)
@@ -124,19 +164,21 @@ def delete_resource(
     resource_uuid: str,
     service: ResourceServiceDependency,
 ) -> Response:
-    """Delete a Resource by internal UUID."""
-    service.delete(
-        _parse_resource_uuid(resource_uuid)
+    service.delete(_parse_resource_uuid(resource_uuid))
+    return Response(
+        status_code=status.HTTP_204_NO_CONTENT
     )
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 def _parse_resource_uuid(value: str) -> ResourceUUID:
-    """Parse an HTTP path UUID or return a validation error."""
     try:
         return ResourceUUID.from_string(value)
     except (TypeError, ValueError) as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="resource_uuid must be a valid UUID",
+            status_code=(
+                status.HTTP_422_UNPROCESSABLE_CONTENT
+            ),
+            detail=(
+                "resource_uuid must be a valid UUID"
+            ),
         ) from exc

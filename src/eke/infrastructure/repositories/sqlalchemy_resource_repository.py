@@ -10,7 +10,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from eke.domain.identity import BusinessIdentifier, ResourceUUID
-from eke.domain.repositories import ResourceRepository
+from eke.domain.repositories import (
+    ResourceRepository,
+    ResourceSearchCriteria,
+    ResourceSearchPage,
+)
 from eke.domain.resources import Resource
 from eke.infrastructure.database.models import (
     ResourceIdentifierModel,
@@ -57,7 +61,6 @@ class SQLAlchemyResourceRepository:
                 yield session
 
     def save(self, resource: Resource) -> None:
-        """Create or replace a Resource aggregate."""
         if not isinstance(resource, Resource):
             raise TypeError("resource must be a Resource")
 
@@ -98,7 +101,6 @@ class SQLAlchemyResourceRepository:
         self,
         resource_uuid: ResourceUUID,
     ) -> Resource | None:
-        """Return a Resource by internal identity."""
         self._validate_resource_uuid(resource_uuid)
 
         with self._session() as session:
@@ -116,7 +118,6 @@ class SQLAlchemyResourceRepository:
         self,
         identifier: BusinessIdentifier,
     ) -> Resource | None:
-        """Return a Resource by business identifier."""
         if not isinstance(identifier, BusinessIdentifier):
             raise TypeError(
                 "identifier must be a BusinessIdentifier"
@@ -142,7 +143,6 @@ class SQLAlchemyResourceRepository:
             )
 
     def exists(self, resource_uuid: ResourceUUID) -> bool:
-        """Return whether a Resource exists."""
         self._validate_resource_uuid(resource_uuid)
 
         with self._session() as session:
@@ -155,7 +155,6 @@ class SQLAlchemyResourceRepository:
             )
 
     def delete(self, resource_uuid: ResourceUUID) -> bool:
-        """Delete a Resource aggregate."""
         self._validate_resource_uuid(resource_uuid)
 
         with self._session(write=True) as session:
@@ -170,6 +169,45 @@ class SQLAlchemyResourceRepository:
             session.flush()
             return True
 
+    def search(
+        self,
+        criteria: ResourceSearchCriteria,
+    ) -> ResourceSearchPage:
+        if not isinstance(criteria, ResourceSearchCriteria):
+            raise TypeError(
+                "criteria must be a ResourceSearchCriteria"
+            )
+
+        with self._session() as session:
+            models = tuple(
+                session.scalars(
+                    select(ResourceModel).order_by(
+                        ResourceModel.resource_uuid
+                    )
+                )
+            )
+
+        resources = tuple(
+            decode_resource(model.payload)
+            for model in models
+        )
+        filtered = tuple(
+            resource
+            for resource in resources
+            if _matches(resource, criteria)
+        )
+        page_items = filtered[
+            criteria.offset:
+            criteria.offset + criteria.limit
+        ]
+
+        return ResourceSearchPage(
+            items=page_items,
+            total=len(filtered),
+            limit=criteria.limit,
+            offset=criteria.offset,
+        )
+
     @staticmethod
     def _validate_resource_uuid(
         resource_uuid: ResourceUUID,
@@ -178,6 +216,31 @@ class SQLAlchemyResourceRepository:
             raise TypeError(
                 "resource_uuid must be a ResourceUUID"
             )
+
+
+def _matches(
+    resource: Resource,
+    criteria: ResourceSearchCriteria,
+) -> bool:
+    if (
+        criteria.identifier_scheme is not None
+        and not resource.has_identifier_scheme(
+            criteria.identifier_scheme
+        )
+    ):
+        return False
+
+    if (
+        criteria.resource_type is not None
+        and resource.resource_type
+        is not criteria.resource_type
+    ):
+        return False
+
+    return not (
+        criteria.status is not None
+        and resource.status is not criteria.status
+    )
 
 
 resource_repository_contract: type[ResourceRepository]

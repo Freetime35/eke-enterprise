@@ -50,3 +50,14 @@ class ResourceResponse(BaseModel):
     identifiers: list[BusinessIdentifierSchema]
     resource_type: ResourceType
     status: ResourceStatus
+
+
+class ResourceSearchResponse(BaseModel):
+    """Paginated Resource search response."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[ResourceResponse]
+    total: int = Field(ge=0)
+    limit: int = Field(ge=1, le=100)
+    offset: int = Field(ge=0)
