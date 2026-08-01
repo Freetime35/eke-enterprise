@@ -4,6 +4,10 @@ from eke.presentation.api.schemas.resource_titles import (
     ResourceTitleCreateRequest,
     ResourceTitleResponse,
 )
+from eke.presentation.api.schemas.resource_versions import (
+    ResourceVersionCreateRequest,
+    ResourceVersionResponse,
+)
 from eke.presentation.api.schemas.resources import (
     BusinessIdentifierSchema,
     ResourceCreateRequest,
@@ -20,4 +24,6 @@ __all__ = [
     "ResourceTitleCreateRequest",
     "ResourceTitleResponse",
     "ResourceUpdateRequest",
+    "ResourceVersionCreateRequest",
+    "ResourceVersionResponse",
 ]

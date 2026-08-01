@@ -9,7 +9,11 @@ from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from eke.application import UnitOfWork
-from eke.application.resources import ResourceService, ResourceTitleService
+from eke.application.resources import (
+    ResourceService,
+    ResourceTitleService,
+    ResourceVersionService,
+)
 from eke.infrastructure.unit_of_work import SQLAlchemyUnitOfWork
 
 
@@ -24,6 +28,9 @@ class ApplicationContainer:
 
     def resource_title_service(self) -> ResourceTitleService:
         return ResourceTitleService(self.unit_of_work_factory)
+
+    def resource_version_service(self) -> ResourceVersionService:
+        return ResourceVersionService(self.unit_of_work_factory)
 
 
 def build_container(
