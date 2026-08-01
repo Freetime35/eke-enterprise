@@ -49,6 +49,7 @@ dev = [
     "pytest>=9",
     "pytest-cov>=7",
     "ruff>=0.13",
+	"alembic>=1.18,<2.0",
 ]
 
 [project.urls]
