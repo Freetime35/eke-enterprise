@@ -18,16 +18,19 @@ from eke.application.eurlex import (
     EurLexImportJobService,
     ImportJobNotFoundError,
     ImportJobStateError,
+    ImportJobWorker,
 )
 from eke.domain.identity import CelexIdentifier
-from eke.domain.imports import ImportJob
+from eke.domain.imports import ImportJob, ImportJobStatus
 from eke.presentation.api.dependencies import (
     get_import_job_service,
+    get_import_job_worker,
 )
 from eke.presentation.api.schemas import (
     APIErrorResponse,
     ImportJobCreateRequest,
     ImportJobResponse,
+    ImportJobSubmissionResponse,
 )
 
 router = APIRouter(
@@ -38,6 +41,10 @@ router = APIRouter(
 ImportJobServiceDependency = Annotated[
     EurLexImportJobService,
     Depends(get_import_job_service),
+]
+ImportJobWorkerDependency = Annotated[
+    ImportJobWorker,
+    Depends(get_import_job_worker),
 ]
 
 
@@ -104,15 +111,7 @@ def get_import_job(
     service: ImportJobServiceDependency,
 ) -> ImportJobResponse:
     """Return one import job by UUID."""
-    try:
-        job = service.get_job(job_uuid)
-    except ImportJobNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
-
-    return _to_response(job)
+    return _to_response(_get_job(service, job_uuid))
 
 
 @router.post(
@@ -128,7 +127,7 @@ def get_import_job(
             "description": "The import job cannot be run.",
         },
     },
-    summary="Run an EUR-Lex import job",
+    summary="Run an EUR-Lex import job synchronously",
 )
 def run_import_job(
     job_uuid: UUID,
@@ -149,6 +148,65 @@ def run_import_job(
         ) from exc
 
     return _to_response(job)
+
+
+@router.post(
+    "/{job_uuid}/submit",
+    response_model=ImportJobSubmissionResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "model": APIErrorResponse,
+            "description": "The import job does not exist.",
+        },
+        status.HTTP_409_CONFLICT: {
+            "model": APIErrorResponse,
+            "description": (
+                "The job is not pending or is already submitted."
+            ),
+        },
+    },
+    summary="Submit an EUR-Lex import job",
+)
+def submit_import_job(
+    job_uuid: UUID,
+    service: ImportJobServiceDependency,
+    worker: ImportJobWorkerDependency,
+) -> ImportJobSubmissionResponse:
+    """Submit one pending import job for background execution."""
+    job = _get_job(service, job_uuid)
+    if job.status is not ImportJobStatus.PENDING:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="only pending import jobs can be submitted",
+        )
+
+    accepted = worker.submit(job_uuid)
+    if not accepted:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="import job is already submitted",
+        )
+
+    location = f"/imports/eurlex/jobs/{job_uuid}"
+    return ImportJobSubmissionResponse(
+        job_uuid=job_uuid,
+        accepted=True,
+        location=location,
+    )
+
+
+def _get_job(
+    service: EurLexImportJobService,
+    job_uuid: UUID,
+) -> ImportJob:
+    try:
+        return service.get_job(job_uuid)
+    except ImportJobNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
 
 
 def _to_response(job: ImportJob) -> ImportJobResponse:

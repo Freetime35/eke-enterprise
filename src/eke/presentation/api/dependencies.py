@@ -6,6 +6,7 @@ from eke.application.eurlex import (
     EurLexBulkImportService,
     EurLexImportJobService,
     EurLexResourceImportService,
+    ImportJobWorker,
 )
 from eke.application.resources import (
     ResourceClassificationService,
@@ -92,3 +93,9 @@ def get_import_job_service(
     request: Request,
 ) -> EurLexImportJobService:
     return get_container(request).import_job_service()
+
+
+def get_import_job_worker(
+    request: Request,
+) -> ImportJobWorker:
+    return get_container(request).import_job_worker()

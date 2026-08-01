@@ -59,16 +59,18 @@ def create_app(
         )
         eurlex_client = HttpxEurLexClient()
         upgrade_database(engine)
-        app.state.container = build_container(
+        container = build_container(
             engine,
             create_session_factory(engine),
             eurlex_client=eurlex_client,
         )
+        app.state.container = container
         app.state.ready = True
         try:
             yield
         finally:
             app.state.ready = False
+            container.import_job_worker().shutdown()
             eurlex_client.close()
             engine.dispose()
 
@@ -102,7 +104,6 @@ def create_app(
     app.state.ready = False
 
     register_exception_handlers(app)
-
     app.include_router(system_router)
     app.include_router(resources_router)
     app.include_router(resource_titles_router)

@@ -40,3 +40,13 @@ class ImportJobResponse(BaseModel):
     completed_at: datetime | None
     results: list[dict[str, Any]] | None
     error_detail: str | None
+
+
+class ImportJobSubmissionResponse(BaseModel):
+    """Confirm asynchronous acceptance of an import job."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    job_uuid: UUID
+    accepted: bool
+    location: str
