@@ -6,6 +6,9 @@ from fastapi.responses import JSONResponse
 from eke.application.resources import (
     ResourceAlreadyExistsError,
     ResourceNotFoundError,
+    ResourceRelationshipAlreadyExistsError,
+    ResourceRelationshipConflictError,
+    ResourceRelationshipNotFoundError,
     ResourceTitleAlreadyExistsError,
     ResourceTitleNotFoundError,
     ResourceVersionAlreadyExistsError,
@@ -102,6 +105,47 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=404,
             content={
                 "code": "resource_version_not_found",
+                "detail": str(exception),
+            },
+        )
+
+    @app.exception_handler(
+        ResourceRelationshipAlreadyExistsError
+    )
+    async def relationship_exists_handler(
+        _request: Request,
+        exception: ResourceRelationshipAlreadyExistsError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "code": "resource_relationship_conflict",
+                "detail": str(exception),
+            },
+        )
+
+    @app.exception_handler(ResourceRelationshipConflictError)
+    async def relationship_conflict_handler(
+        _request: Request,
+        exception: ResourceRelationshipConflictError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "code": "resource_relationship_conflict",
+                "detail": str(exception),
+            },
+        )
+
+    @app.exception_handler(ResourceRelationshipNotFoundError)
+    async def relationship_not_found_handler(
+        _request: Request,
+        exception: ResourceRelationshipNotFoundError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "code": "resource_relationship_not_found",
                 "detail": str(exception),
             },
         )

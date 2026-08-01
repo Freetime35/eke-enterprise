@@ -3,6 +3,7 @@
 from fastapi import Request
 
 from eke.application.resources import (
+    ResourceRelationshipService,
     ResourceService,
     ResourceTitleService,
     ResourceVersionService,
@@ -13,7 +14,9 @@ from eke.presentation.api.container import ApplicationContainer
 def get_container(request: Request) -> ApplicationContainer:
     container = getattr(request.app.state, "container", None)
     if not isinstance(container, ApplicationContainer):
-        raise RuntimeError("application container is not initialized")
+        raise RuntimeError(
+            "application container is not initialized"
+        )
     return container
 
 
@@ -31,3 +34,11 @@ def get_resource_version_service(
     request: Request,
 ) -> ResourceVersionService:
     return get_container(request).resource_version_service()
+
+
+def get_resource_relationship_service(
+    request: Request,
+) -> ResourceRelationshipService:
+    return get_container(
+        request
+    ).resource_relationship_service()

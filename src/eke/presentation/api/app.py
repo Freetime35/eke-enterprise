@@ -13,8 +13,11 @@ from eke.infrastructure.database import (
     upgrade_database,
 )
 from eke.presentation.api.container import build_container
-from eke.presentation.api.errors import register_exception_handlers
+from eke.presentation.api.errors import (
+    register_exception_handlers,
+)
 from eke.presentation.api.routes import (
+    resource_relationships_router,
     resource_titles_router,
     resource_versions_router,
     resources_router,
@@ -23,17 +26,23 @@ from eke.presentation.api.routes import (
 from eke.presentation.api.settings import APISettings
 
 
-def create_app(settings: APISettings | None = None) -> FastAPI:
+def create_app(
+    settings: APISettings | None = None,
+) -> FastAPI:
     resolved_settings = (
         settings
         if settings is not None
         else APISettings.from_environment()
     )
     if not isinstance(resolved_settings, APISettings):
-        raise TypeError("settings must be an APISettings or None")
+        raise TypeError(
+            "settings must be an APISettings or None"
+        )
 
     @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(
+        app: FastAPI,
+    ) -> AsyncIterator[None]:
         engine = create_sqlite_engine(
             resolved_settings.database_url
         )
@@ -76,4 +85,5 @@ def create_app(settings: APISettings | None = None) -> FastAPI:
     app.include_router(resources_router)
     app.include_router(resource_titles_router)
     app.include_router(resource_versions_router)
+    app.include_router(resource_relationships_router)
     return app

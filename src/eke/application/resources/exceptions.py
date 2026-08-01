@@ -31,3 +31,17 @@ class ResourceVersionNotFoundError(ResourceApplicationError):
 
 class ResourceVersionConflictError(ResourceApplicationError):
     """Raised when a ResourceVersion operation violates version history."""
+
+
+class ResourceRelationshipAlreadyExistsError(
+    ResourceApplicationError
+):
+    """Raised when an identical relationship already exists."""
+
+
+class ResourceRelationshipNotFoundError(ResourceApplicationError):
+    """Raised when a requested relationship does not exist."""
+
+
+class ResourceRelationshipConflictError(ResourceApplicationError):
+    """Raised when a relationship operation is inconsistent."""
