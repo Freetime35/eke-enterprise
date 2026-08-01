@@ -48,6 +48,7 @@ EXPECTED_PATHS = {
     "/imports/eurlex/jobs/{job_uuid}",
     "/imports/eurlex/jobs/{job_uuid}/run",
     "/imports/eurlex/jobs/{job_uuid}/submit",
+    "/imports/eurlex/jobs/{job_uuid}/cancel",
 }
 
 
@@ -176,7 +177,12 @@ def test_operation_ids_are_unique_and_stable(
     assert (
         "eurlex_import_jobs_search_import_jobs"
         in operation_ids
-)
+    )
+    assert (
+        "eurlex_import_jobs_cancel_import_job"
+        in operation_ids
+    )
+
 def test_openapi_contains_validation_error_schema(
     tmp_path: Path,
 ) -> None:

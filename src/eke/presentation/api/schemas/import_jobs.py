@@ -38,6 +38,7 @@ class ImportJobResponse(BaseModel):
     created_at: datetime
     started_at: datetime | None
     completed_at: datetime | None
+    cancelled_at: datetime | None
     results: list[dict[str, Any]] | None
     error_detail: str | None
 

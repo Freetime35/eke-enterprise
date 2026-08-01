@@ -42,7 +42,7 @@ class ImportJobStateError(Exception):
 
 
 class EurLexImportJobService:
-    """Create, retrieve, search, and execute import jobs."""
+    """Create, retrieve, search, execute, and cancel jobs."""
 
     def __init__(
         self,
@@ -127,6 +127,22 @@ class EurLexImportJobService:
                 "criteria must be an ImportJobSearchCriteria"
             )
         return self._repository.search(criteria)
+
+    def cancel_job(self, job_uuid: UUID) -> ImportJob:
+        """Cancel a pending job before execution starts."""
+        job = self.get_job(job_uuid)
+        if job.status is not ImportJobStatus.PENDING:
+            raise ImportJobStateError(
+                "only pending import jobs can be cancelled"
+            )
+
+        cancelled = replace(
+            job,
+            status=ImportJobStatus.CANCELLED,
+            cancelled_at=self._now(),
+        )
+        self._repository.save(cancelled)
+        return cancelled
 
     def run_job(self, job_uuid: UUID) -> ImportJob:
         """Execute a pending job and persist each transition."""

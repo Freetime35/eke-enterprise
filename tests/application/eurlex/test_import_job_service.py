@@ -14,9 +14,9 @@ from eke.application.eurlex import (
     EurLexBulkImportStatus,
     EurLexImportJobService,
     ImportJobNotFoundError,
-    ImportJobStateError,
     ImportJobSearchCriteria,
     ImportJobSearchPage,
+    ImportJobStateError,
 )
 from eke.domain.identity import CelexIdentifier
 from eke.domain.imports import ImportJob, ImportJobStatus

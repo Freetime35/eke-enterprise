@@ -56,12 +56,6 @@ ImportJobWorkerDependency = Annotated[
     "",
     response_model=ImportJobResponse,
     status_code=status.HTTP_201_CREATED,
-    responses={
-        status.HTTP_422_UNPROCESSABLE_CONTENT: {
-            "model": APIErrorResponse,
-            "description": "At least one CELEX value is invalid.",
-        },
-    },
     summary="Create an EUR-Lex import job",
 )
 def create_import_job(
@@ -69,19 +63,13 @@ def create_import_job(
     service: ImportJobServiceDependency,
     response: Response,
 ) -> ImportJobResponse:
-    """Create and persist a pending import job."""
     identifiers: list[CelexIdentifier] = []
-
     for index, value in enumerate(request.celex):
         try:
-            identifiers.append(
-                CelexIdentifier.parse(value)
-            )
+            identifiers.append(CelexIdentifier.parse(value))
         except (TypeError, ValueError) as exc:
             raise HTTPException(
-                status_code=(
-                    status.HTTP_422_UNPROCESSABLE_CONTENT
-                ),
+                status_code=422,
                 detail={
                     "index": index,
                     "celex": value,
@@ -118,16 +106,9 @@ def search_import_jobs(
         datetime | None,
         Query(),
     ] = None,
-    limit: Annotated[
-        int,
-        Query(ge=1, le=100),
-    ] = 20,
-    offset: Annotated[
-        int,
-        Query(ge=0),
-    ] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> ImportJobSearchResponse:
-    """Return a stable filtered page of import jobs."""
     try:
         criteria = ImportJobSearchCriteria(
             status=job_status,
@@ -137,19 +118,11 @@ def search_import_jobs(
             offset=offset,
         )
     except (TypeError, ValueError) as exc:
-        raise HTTPException(
-            status_code=(
-                status.HTTP_422_UNPROCESSABLE_CONTENT
-            ),
-            detail=str(exc),
-        ) from exc
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     page = service.search_jobs(criteria)
     return ImportJobSearchResponse(
-        items=[
-            _to_response(item)
-            for item in page.items
-        ],
+        items=[_to_response(item) for item in page.items],
         total=page.total,
         limit=page.limit,
         offset=page.offset,
@@ -159,24 +132,32 @@ def search_import_jobs(
 @router.get(
     "/{job_uuid}",
     response_model=ImportJobResponse,
-    responses={
-        status.HTTP_404_NOT_FOUND: {
-            "model": APIErrorResponse,
-            "description": "The import job does not exist.",
-        },
-    },
-    summary="Get an EUR-Lex import job",
 )
 def get_import_job(
     job_uuid: UUID,
     service: ImportJobServiceDependency,
 ) -> ImportJobResponse:
-    """Return one import job by UUID."""
     return _to_response(_get_job(service, job_uuid))
 
 
 @router.post(
     "/{job_uuid}/run",
+    response_model=ImportJobResponse,
+)
+def run_import_job(
+    job_uuid: UUID,
+    service: ImportJobServiceDependency,
+) -> ImportJobResponse:
+    try:
+        return _to_response(service.run_job(job_uuid))
+    except ImportJobNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ImportJobStateError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.post(
+    "/{job_uuid}/cancel",
     response_model=ImportJobResponse,
     responses={
         status.HTTP_404_NOT_FOUND: {
@@ -185,67 +166,44 @@ def get_import_job(
         },
         status.HTTP_409_CONFLICT: {
             "model": APIErrorResponse,
-            "description": "The import job cannot be run.",
+            "description": "The import job cannot be cancelled.",
         },
     },
-    summary="Run an EUR-Lex import job synchronously",
+    summary="Cancel an EUR-Lex import job",
 )
-def run_import_job(
+def cancel_import_job(
     job_uuid: UUID,
     service: ImportJobServiceDependency,
 ) -> ImportJobResponse:
-    """Run one pending import job synchronously."""
+    """Cancel one pending import job."""
     try:
-        job = service.run_job(job_uuid)
+        return _to_response(service.cancel_job(job_uuid))
     except ImportJobNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ImportJobStateError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc),
-        ) from exc
-
-    return _to_response(job)
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.post(
     "/{job_uuid}/submit",
     response_model=ImportJobSubmissionResponse,
     status_code=status.HTTP_202_ACCEPTED,
-    responses={
-        status.HTTP_404_NOT_FOUND: {
-            "model": APIErrorResponse,
-            "description": "The import job does not exist.",
-        },
-        status.HTTP_409_CONFLICT: {
-            "model": APIErrorResponse,
-            "description": (
-                "The job is not pending or is already submitted."
-            ),
-        },
-    },
-    summary="Submit an EUR-Lex import job",
 )
 def submit_import_job(
     job_uuid: UUID,
     service: ImportJobServiceDependency,
     worker: ImportJobWorkerDependency,
 ) -> ImportJobSubmissionResponse:
-    """Submit one pending import job for background execution."""
     job = _get_job(service, job_uuid)
     if job.status is not ImportJobStatus.PENDING:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
+            status_code=409,
             detail="only pending import jobs can be submitted",
         )
 
-    accepted = worker.submit(job_uuid)
-    if not accepted:
+    if not worker.submit(job_uuid):
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
+            status_code=409,
             detail="import job is already submitted",
         )
 
@@ -264,15 +222,11 @@ def _get_job(
     try:
         return service.get_job(job_uuid)
     except ImportJobNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
-        ) from exc
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 def _to_response(job: ImportJob) -> ImportJobResponse:
     results: list[dict[str, Any]] | None = None
-
     if job.result_json is not None:
         parsed = loads(job.result_json)
         if isinstance(parsed, list):
@@ -293,6 +247,7 @@ def _to_response(job: ImportJob) -> ImportJobResponse:
         created_at=job.created_at,
         started_at=job.started_at,
         completed_at=job.completed_at,
+        cancelled_at=job.cancelled_at,
         results=results,
         error_detail=job.error_detail,
     )

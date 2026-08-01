@@ -33,6 +33,11 @@ def encode_import_job(job: ImportJob) -> str:
                 if job.completed_at is not None
                 else None
             ),
+            "cancelled_at": (
+                job.cancelled_at.isoformat()
+                if job.cancelled_at is not None
+                else None
+            ),
             "total": job.total,
             "created": job.created,
             "existing": job.existing,
@@ -61,6 +66,9 @@ def decode_import_job(payload: str) -> ImportJob:
         started_at=_parse_datetime(raw["started_at"]),
         completed_at=_parse_datetime(
             raw["completed_at"]
+        ),
+        cancelled_at=_parse_datetime(
+            raw.get("cancelled_at")
         ),
         total=raw["total"],
         created=raw["created"],

@@ -16,6 +16,7 @@ class ImportJobStatus(StrEnum):
     COMPLETED = "COMPLETED"
     PARTIALLY_FAILED = "PARTIALLY_FAILED"
     FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,6 +29,7 @@ class ImportJob:
     created_at: datetime
     started_at: datetime | None = None
     completed_at: datetime | None = None
+    cancelled_at: datetime | None = None
     total: int = 0
     created: int = 0
     existing: int = 0
@@ -55,6 +57,7 @@ class ImportJob:
             raise TypeError(
                 "status must be an ImportJobStatus"
             )
+
         self._validate_datetime(
             self.created_at,
             "created_at",
@@ -67,6 +70,10 @@ class ImportJob:
         self._validate_datetime(
             self.completed_at,
             "completed_at",
+        )
+        self._validate_datetime(
+            self.cancelled_at,
+            "cancelled_at",
         )
 
         counters = (
@@ -91,6 +98,21 @@ class ImportJob:
         if self.created + self.existing + self.failed > self.total:
             raise ValueError(
                 "result counters must not exceed total"
+            )
+
+        if (
+            self.status is ImportJobStatus.CANCELLED
+            and self.cancelled_at is None
+        ):
+            raise ValueError(
+                "cancelled jobs must define cancelled_at"
+            )
+        if (
+            self.status is not ImportJobStatus.CANCELLED
+            and self.cancelled_at is not None
+        ):
+            raise ValueError(
+                "only cancelled jobs may define cancelled_at"
             )
 
     @classmethod
