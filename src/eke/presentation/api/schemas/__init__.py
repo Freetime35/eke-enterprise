@@ -5,6 +5,11 @@ from eke.presentation.api.schemas.errors import (
     ValidationErrorItem,
     ValidationErrorResponse,
 )
+from eke.presentation.api.schemas.eurlex_bulk_imports import (
+    EurLexBulkImportItemResponse,
+    EurLexBulkImportRequest,
+    EurLexBulkImportResponse,
+)
 from eke.presentation.api.schemas.eurlex_imports import (
     EurLexImportRequest,
     EurLexImportResponse,
@@ -40,6 +45,9 @@ from eke.presentation.api.schemas.resources import (
 __all__ = [
     "APIErrorResponse",
     "BusinessIdentifierSchema",
+    "EurLexBulkImportItemResponse",
+    "EurLexBulkImportRequest",
+    "EurLexBulkImportResponse",
     "EurLexImportRequest",
     "EurLexImportResponse",
     "ProvenanceRecordCreateRequest",

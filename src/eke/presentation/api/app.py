@@ -22,6 +22,7 @@ from eke.presentation.api.openapi import (
     generate_operation_id,
 )
 from eke.presentation.api.routes import (
+    eurlex_bulk_imports_router,
     eurlex_imports_router,
     resource_classifications_router,
     resource_provenance_router,
@@ -100,6 +101,7 @@ def create_app(
     app.state.ready = False
 
     register_exception_handlers(app)
+
     app.include_router(system_router)
     app.include_router(resources_router)
     app.include_router(resource_titles_router)
@@ -108,5 +110,6 @@ def create_app(
     app.include_router(resource_provenance_router)
     app.include_router(resource_classifications_router)
     app.include_router(eurlex_imports_router)
+    app.include_router(eurlex_bulk_imports_router)
 
     return app

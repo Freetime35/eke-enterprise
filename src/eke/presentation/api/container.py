@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from eke.application import UnitOfWork
 from eke.application.eurlex import (
+    EurLexBulkImportService,
     EurLexClient,
     EurLexMetadataParser,
     EurLexResourceImportService,
@@ -31,8 +32,6 @@ from eke.infrastructure.unit_of_work import SQLAlchemyUnitOfWork
 
 @dataclass(frozen=True, slots=True)
 class ApplicationContainer:
-    """Hold application factories and external adapters."""
-
     engine: Engine
     session_factory: sessionmaker[Session]
     unit_of_work_factory: Callable[[], UnitOfWork]
@@ -78,6 +77,13 @@ class ApplicationContainer:
             unit_of_work_factory=self.unit_of_work_factory,
         )
 
+    def eurlex_bulk_import_service(
+        self,
+    ) -> EurLexBulkImportService:
+        return EurLexBulkImportService(
+            self.eurlex_import_service()
+        )
+
 
 def build_container(
     engine: Engine,
@@ -86,7 +92,6 @@ def build_container(
     eurlex_client: EurLexClient | None = None,
     eurlex_metadata_parser: EurLexMetadataParser | None = None,
 ) -> ApplicationContainer:
-    """Build the application dependency container."""
     if not isinstance(engine, Engine):
         raise TypeError("engine must be an Engine")
     if not isinstance(session_factory, sessionmaker):

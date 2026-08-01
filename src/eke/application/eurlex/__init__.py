@@ -1,5 +1,11 @@
 """EUR-Lex application ports, models, and workflows."""
 
+from eke.application.eurlex.bulk_import import (
+    EurLexBulkImportItem,
+    EurLexBulkImportResult,
+    EurLexBulkImportService,
+    EurLexBulkImportStatus,
+)
 from eke.application.eurlex.client import EurLexClient
 from eke.application.eurlex.document import EurLexDocument
 from eke.application.eurlex.enrichment import (
@@ -36,6 +42,10 @@ from eke.application.eurlex.resource_mapper import (
 )
 
 __all__ = [
+    "EurLexBulkImportItem",
+    "EurLexBulkImportResult",
+    "EurLexBulkImportService",
+    "EurLexBulkImportStatus",
     "EurLexClassification",
     "EurLexClient",
     "EurLexClientError",

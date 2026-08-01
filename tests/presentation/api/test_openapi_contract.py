@@ -31,6 +31,7 @@ EXPECTED_PATHS = {
     "/resources/{resource_uuid}/versions",
     "/resources/{resource_uuid}/versions/{version_uuid}",
     "/resources/{resource_uuid}/relationships",
+    "/imports/eurlex/bulk",
     (
         "/resources/{resource_uuid}/relationships/"
         "{target_resource_uuid}"

@@ -2,7 +2,10 @@
 
 from fastapi import Request
 
-from eke.application.eurlex import EurLexResourceImportService
+from eke.application.eurlex import (
+    EurLexBulkImportService,
+    EurLexResourceImportService,
+)
 from eke.application.resources import (
     ResourceClassificationService,
     ResourceProvenanceService,
@@ -15,7 +18,6 @@ from eke.presentation.api.container import ApplicationContainer
 
 
 def get_container(request: Request) -> ApplicationContainer:
-    """Return the initialized application container."""
     container = getattr(request.app.state, "container", None)
     if not isinstance(container, ApplicationContainer):
         raise RuntimeError(
@@ -68,3 +70,11 @@ def get_eurlex_import_service(
     request: Request,
 ) -> EurLexResourceImportService:
     return get_container(request).eurlex_import_service()
+
+
+def get_eurlex_bulk_import_service(
+    request: Request,
+) -> EurLexBulkImportService:
+    return get_container(
+        request
+    ).eurlex_bulk_import_service()
