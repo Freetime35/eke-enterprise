@@ -39,7 +39,9 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-dependencies = []
+dependencies = [
+    "SQLAlchemy>=2.0,<3.0",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -84,7 +86,6 @@ select = [
     "B",
 ]
 ignore = []
-
 
 [tool.mypy]
 python_version = "3.11"
