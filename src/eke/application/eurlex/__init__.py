@@ -35,6 +35,9 @@ from eke.application.eurlex.import_job_service import (
     ImportJobNotFoundError,
     ImportJobStateError,
 )
+from eke.application.eurlex.import_job_worker import (
+    ImportJobWorker,
+)
 from eke.application.eurlex.import_result import EurLexImportResult
 from eke.application.eurlex.import_service import (
     EurLexResourceImportService,
@@ -76,6 +79,7 @@ __all__ = [
     "ImportJobNotFoundError",
     "ImportJobRepository",
     "ImportJobStateError",
+    "ImportJobWorker",
     "map_classifications",
     "map_relationships",
     "map_resource_status",

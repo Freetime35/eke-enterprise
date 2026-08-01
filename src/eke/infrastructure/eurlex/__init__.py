@@ -10,6 +10,9 @@ from eke.infrastructure.eurlex.httpx_client import (
 from eke.infrastructure.eurlex.sqlalchemy_import_job_repository import (
     SQLAlchemyImportJobRepository,
 )
+from eke.infrastructure.eurlex.threaded_import_job_worker import (
+    ThreadedImportJobWorker,
+)
 
 RdfXmlEurLexMetadataParser = (
     FullRdfXmlEurLexMetadataParser
@@ -21,4 +24,5 @@ __all__ = [
     "HttpxEurLexClient",
     "RdfXmlEurLexMetadataParser",
     "SQLAlchemyImportJobRepository",
+    "ThreadedImportJobWorker",
 ]
