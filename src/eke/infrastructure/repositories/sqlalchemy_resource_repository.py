@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
+
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
@@ -18,19 +21,41 @@ from eke.infrastructure.repositories.resource_codec import (
 
 
 class SQLAlchemyResourceRepository:
-    """Persist Resource aggregates through SQLAlchemy."""
+    """Persist Resource aggregates through SQLAlchemy.
 
-    def __init__(self, session_factory: sessionmaker[Session]) -> None:
-        if not isinstance(session_factory, sessionmaker):
-            raise TypeError("session_factory must be a sessionmaker")
-        self._session_factory = session_factory
+    The repository may receive either an existing Session, for Unit of Work
+    usage, or a sessionmaker for standalone repository usage.
+    """
+
+    def __init__(
+        self,
+        session_source: Session | sessionmaker[Session],
+    ) -> None:
+        if not isinstance(session_source, (Session, sessionmaker)):
+            raise TypeError(
+                "session_source must be a Session or sessionmaker"
+            )
+        self._session_source = session_source
+
+    @contextmanager
+    def _session(self, *, write: bool = False) -> Iterator[Session]:
+        if isinstance(self._session_source, Session):
+            yield self._session_source
+            return
+
+        if write:
+            with self._session_source.begin() as session:
+                yield session
+        else:
+            with self._session_source() as session:
+                yield session
 
     def save(self, resource: Resource) -> None:
         if not isinstance(resource, Resource):
             raise TypeError("resource must be a Resource")
 
         resource_key = str(resource.resource_uuid)
-        with self._session_factory.begin() as session:
+        with self._session(write=True) as session:
             model = session.get(ResourceModel, resource_key)
             if model is None:
                 session.add(
@@ -66,7 +91,7 @@ class SQLAlchemyResourceRepository:
 
     def get(self, resource_uuid: ResourceUUID) -> Resource | None:
         self._validate_resource_uuid(resource_uuid)
-        with self._session_factory() as session:
+        with self._session() as session:
             model = session.get(ResourceModel, str(resource_uuid))
             return decode_resource(model.payload) if model else None
 
@@ -89,21 +114,19 @@ class SQLAlchemyResourceRepository:
                 ResourceIdentifierModel.value == identifier.value,
             )
         )
-        with self._session_factory() as session:
+        with self._session() as session:
             model = session.scalar(statement)
             return decode_resource(model.payload) if model else None
 
     def exists(self, resource_uuid: ResourceUUID) -> bool:
         self._validate_resource_uuid(resource_uuid)
-        with self._session_factory() as session:
-            return (
-                session.get(ResourceModel, str(resource_uuid)) is not None
-            )
+        with self._session() as session:
+            return session.get(ResourceModel, str(resource_uuid)) is not None
 
     def delete(self, resource_uuid: ResourceUUID) -> bool:
         self._validate_resource_uuid(resource_uuid)
         resource_key = str(resource_uuid)
-        with self._session_factory.begin() as session:
+        with self._session(write=True) as session:
             model = session.get(ResourceModel, resource_key)
             if model is None:
                 return False
@@ -113,6 +136,7 @@ class SQLAlchemyResourceRepository:
                 )
             )
             session.delete(model)
+            session.flush()
             return True
 
     @staticmethod
