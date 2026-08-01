@@ -1,5 +1,9 @@
 """HTTP schema exports."""
 
+from eke.presentation.api.schemas.resource_titles import (
+    ResourceTitleCreateRequest,
+    ResourceTitleResponse,
+)
 from eke.presentation.api.schemas.resources import (
     BusinessIdentifierSchema,
     ResourceCreateRequest,
@@ -13,5 +17,7 @@ __all__ = [
     "ResourceCreateRequest",
     "ResourceResponse",
     "ResourceSearchResponse",
+    "ResourceTitleCreateRequest",
+    "ResourceTitleResponse",
     "ResourceUpdateRequest",
 ]

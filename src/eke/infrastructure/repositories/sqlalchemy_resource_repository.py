@@ -65,8 +65,10 @@ class SQLAlchemyResourceRepository:
             raise TypeError("resource must be a Resource")
 
         resource_key = str(resource.resource_uuid)
+
         with self._session(write=True) as session:
             model = session.get(ResourceModel, resource_key)
+
             if model is None:
                 model = ResourceModel(
                     resource_uuid=resource_key,
@@ -75,12 +77,14 @@ class SQLAlchemyResourceRepository:
                 )
                 session.add(model)
             else:
-                model.payload_version = (
-                    RESOURCE_PAYLOAD_VERSION
-                )
+                model.payload_version = RESOURCE_PAYLOAD_VERSION
                 model.payload = encode_resource(resource)
-                model.identifiers.clear()
 
+                # Supprime d'abord les anciennes lignes d'identifiants.
+                model.identifiers.clear()
+                session.flush()
+
+            # Réinsère ensuite l'état courant des identifiants.
             model.identifiers.extend(
                 ResourceIdentifierModel(
                     scheme=identifier.scheme.value,
