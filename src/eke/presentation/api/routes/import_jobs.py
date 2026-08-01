@@ -36,6 +36,7 @@ from eke.presentation.api.schemas import (
     ImportJobLineageResponse,
     ImportJobResponse,
     ImportJobSearchResponse,
+    ImportJobStatusSummaryResponse,
     ImportJobSubmissionResponse,
 )
 
@@ -127,6 +128,22 @@ def search_import_jobs(
 
 
 @router.get(
+    "/summary",
+    response_model=ImportJobStatusSummaryResponse,
+    summary="Summarize EUR-Lex import jobs",
+)
+def summarize_import_jobs(
+    service: ImportJobServiceDependency,
+) -> ImportJobStatusSummaryResponse:
+    """Return aggregate counts for every lifecycle state."""
+    summary = service.summarize_jobs()
+    return ImportJobStatusSummaryResponse(
+        total=summary.total,
+        counts=summary.counts,
+    )
+
+
+@router.get(
     "/{job_uuid}",
     response_model=ImportJobResponse,
 )
@@ -140,13 +157,11 @@ def get_import_job(
 @router.get(
     "/{job_uuid}/lineage",
     response_model=ImportJobLineageResponse,
-    summary="Get an EUR-Lex import job retry lineage",
 )
 def get_import_job_lineage(
     job_uuid: UUID,
     service: ImportJobServiceDependency,
 ) -> ImportJobLineageResponse:
-    """Return retry ancestors from origin to current job."""
     try:
         lineage = service.get_job_lineage(job_uuid)
     except ImportJobNotFoundError as exc:
@@ -158,10 +173,7 @@ def get_import_job_lineage(
         root_job_uuid=lineage.root.job_uuid,
         current_job_uuid=lineage.current.job_uuid,
         depth=lineage.depth,
-        items=[
-            _to_response(item)
-            for item in lineage.items
-        ],
+        items=[_to_response(item) for item in lineage.items],
     )
 
 

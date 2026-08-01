@@ -19,6 +19,7 @@ from eke.presentation.api.schemas.import_jobs import (
     ImportJobLineageResponse,
     ImportJobResponse,
     ImportJobSearchResponse,
+    ImportJobStatusSummaryResponse,
     ImportJobSubmissionResponse,
 )
 from eke.presentation.api.schemas.resource_classifications import (
@@ -61,6 +62,7 @@ __all__ = [
     "ImportJobLineageResponse",
     "ImportJobResponse",
     "ImportJobSearchResponse",
+    "ImportJobStatusSummaryResponse",
     "ImportJobSubmissionResponse",
     "ProvenanceRecordCreateRequest",
     "ProvenanceRecordResponse",

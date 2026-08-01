@@ -22,6 +22,9 @@ from eke.application.eurlex.import_job_search import (
     ImportJobSearchCriteria,
     ImportJobSearchPage,
 )
+from eke.application.eurlex.import_job_summary import (
+    ImportJobStatusSummary,
+)
 from eke.domain.identity import CelexIdentifier
 from eke.domain.imports import ImportJob, ImportJobStatus
 
@@ -150,6 +153,23 @@ class EurLexImportJobService:
 
         return ImportJobLineage(
             items=tuple(reversed(reversed_items))
+        )
+
+    def summarize_jobs(self) -> ImportJobStatusSummary:
+        """Return aggregate counts for every job status."""
+        counts = {
+            status: self._repository.search(
+                ImportJobSearchCriteria(
+                    status=status,
+                    limit=1,
+                    offset=0,
+                )
+            ).total
+            for status in ImportJobStatus
+        }
+        return ImportJobStatusSummary(
+            total=sum(counts.values()),
+            counts=counts,
         )
 
     def search_jobs(

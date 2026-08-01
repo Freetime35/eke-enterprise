@@ -66,6 +66,15 @@ class ImportJobSearchResponse(BaseModel):
     offset: int
 
 
+class ImportJobStatusSummaryResponse(BaseModel):
+    """Represent aggregate job counts by lifecycle state."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    total: int
+    counts: dict[ImportJobStatus, int]
+
+
 class ImportJobSubmissionResponse(BaseModel):
     """Confirm asynchronous acceptance of an import job."""
 
