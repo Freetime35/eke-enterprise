@@ -53,6 +53,7 @@ EXPECTED_PATHS = {
     "/imports/eurlex/jobs/{job_uuid}/lineage",
     "/imports/eurlex/jobs/summary",
     "/imports/eurlex/jobs/metrics",
+    "/imports/eurlex/jobs/durations",
 }
 
 
@@ -202,6 +203,10 @@ def test_operation_ids_are_unique_and_stable(
         "eurlex_import_jobs_get_import_job_metrics"
         in operation_ids
     )
+    assert (
+    "eurlex_import_jobs_get_import_job_duration_statistics"
+    in operation_ids
+)
 
 def test_openapi_contains_validation_error_schema(
     tmp_path: Path,

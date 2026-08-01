@@ -90,6 +90,17 @@ class ImportJobOperationalMetricsResponse(BaseModel):
     failure_rate: float
 
 
+class ImportJobDurationStatisticsResponse(BaseModel):
+    """Represent aggregate execution-duration statistics."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    sample_count: int
+    minimum_seconds: float | None
+    maximum_seconds: float | None
+    average_seconds: float | None
+
+
 class ImportJobSubmissionResponse(BaseModel):
     """Confirm asynchronous acceptance of an import job."""
 

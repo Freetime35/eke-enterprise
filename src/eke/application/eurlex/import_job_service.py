@@ -12,6 +12,9 @@ from uuid import UUID
 from eke.application.eurlex.bulk_import import (
     EurLexBulkImportResult,
 )
+from eke.application.eurlex.import_job_duration_metrics import (
+    ImportJobDurationStatistics,
+)
 from eke.application.eurlex.import_job_lineage import (
     ImportJobLineage,
 )
@@ -181,6 +184,35 @@ class EurLexImportJobService:
         """Return operational indicators derived from job status."""
         return ImportJobOperationalMetrics.from_summary(
             self.summarize_jobs()
+        )
+
+    def get_duration_statistics(
+        self,
+    ) -> ImportJobDurationStatistics:
+        """Return execution-duration statistics for terminal jobs."""
+        jobs: list[ImportJob] = []
+
+        for status in (
+            ImportJobStatus.COMPLETED,
+            ImportJobStatus.PARTIALLY_FAILED,
+            ImportJobStatus.FAILED,
+        ):
+            offset = 0
+            while True:
+                page = self._repository.search(
+                    ImportJobSearchCriteria(
+                        status=status,
+                        limit=100,
+                        offset=offset,
+                    )
+                )
+                jobs.extend(page.items)
+                offset += len(page.items)
+                if offset >= page.total:
+                    break
+
+        return ImportJobDurationStatistics.from_jobs(
+            tuple(jobs)
         )
 
     def search_jobs(

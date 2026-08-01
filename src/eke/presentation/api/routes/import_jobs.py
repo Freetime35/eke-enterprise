@@ -33,6 +33,7 @@ from eke.presentation.api.dependencies import (
 )
 from eke.presentation.api.schemas import (
     ImportJobCreateRequest,
+    ImportJobDurationStatisticsResponse,
     ImportJobLineageResponse,
     ImportJobOperationalMetricsResponse,
     ImportJobResponse,
@@ -131,7 +132,6 @@ def search_import_jobs(
 @router.get(
     "/summary",
     response_model=ImportJobStatusSummaryResponse,
-    summary="Summarize EUR-Lex import jobs",
 )
 def summarize_import_jobs(
     service: ImportJobServiceDependency,
@@ -146,12 +146,10 @@ def summarize_import_jobs(
 @router.get(
     "/metrics",
     response_model=ImportJobOperationalMetricsResponse,
-    summary="Get EUR-Lex import job operational metrics",
 )
 def get_import_job_metrics(
     service: ImportJobServiceDependency,
 ) -> ImportJobOperationalMetricsResponse:
-    """Return operational indicators derived from job status."""
     metrics = service.get_operational_metrics()
     return ImportJobOperationalMetricsResponse(
         total=metrics.total,
@@ -162,6 +160,24 @@ def get_import_job_metrics(
         cancelled=metrics.cancelled,
         completion_rate=metrics.completion_rate,
         failure_rate=metrics.failure_rate,
+    )
+
+
+@router.get(
+    "/durations",
+    response_model=ImportJobDurationStatisticsResponse,
+    summary="Get EUR-Lex import job duration statistics",
+)
+def get_import_job_duration_statistics(
+    service: ImportJobServiceDependency,
+) -> ImportJobDurationStatisticsResponse:
+    """Return duration statistics for completed executions."""
+    statistics = service.get_duration_statistics()
+    return ImportJobDurationStatisticsResponse(
+        sample_count=statistics.sample_count,
+        minimum_seconds=statistics.minimum_seconds,
+        maximum_seconds=statistics.maximum_seconds,
+        average_seconds=statistics.average_seconds,
     )
 
 

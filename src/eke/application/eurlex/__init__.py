@@ -26,6 +26,9 @@ from eke.application.eurlex.full_resource_mapper import (
     map_relationships,
     map_version,
 )
+from eke.application.eurlex.import_job_duration_metrics import (
+    ImportJobDurationStatistics,
+)
 from eke.application.eurlex.import_job_lineage import (
     ImportJobLineage,
 )
@@ -90,6 +93,7 @@ __all__ = [
     "EurLexTitle",
     "EurLexUnsupportedMediaTypeError",
     "EurLexUpstreamError",
+    "ImportJobDurationStatistics",
     "ImportJobLineage",
     "ImportJobLineageError",
     "ImportJobNotFoundError",
