@@ -8,6 +8,8 @@ from eke.application.resources import (
     ProvenanceRecordConflictError,
     ProvenanceRecordNotFoundError,
     ResourceAlreadyExistsError,
+    ResourceClassificationAlreadyExistsError,
+    ResourceClassificationNotFoundError,
     ResourceNotFoundError,
     ResourceRelationshipAlreadyExistsError,
     ResourceRelationshipConflictError,
@@ -188,6 +190,34 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=404,
             content={
                 "code": "provenance_record_not_found",
+                "detail": str(exception),
+            },
+        )
+
+    @app.exception_handler(
+        ResourceClassificationAlreadyExistsError
+    )
+    async def classification_exists_handler(
+        _request: Request,
+        exception: ResourceClassificationAlreadyExistsError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "code": "resource_classification_conflict",
+                "detail": str(exception),
+            },
+        )
+
+    @app.exception_handler(ResourceClassificationNotFoundError)
+    async def classification_not_found_handler(
+        _request: Request,
+        exception: ResourceClassificationNotFoundError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "code": "resource_classification_not_found",
                 "detail": str(exception),
             },
         )

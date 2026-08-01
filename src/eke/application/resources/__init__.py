@@ -6,6 +6,8 @@ from eke.application.resources.exceptions import (
     ProvenanceRecordNotFoundError,
     ResourceAlreadyExistsError,
     ResourceApplicationError,
+    ResourceClassificationAlreadyExistsError,
+    ResourceClassificationNotFoundError,
     ResourceNotFoundError,
     ResourceRelationshipAlreadyExistsError,
     ResourceRelationshipConflictError,
@@ -15,6 +17,9 @@ from eke.application.resources.exceptions import (
     ResourceVersionAlreadyExistsError,
     ResourceVersionConflictError,
     ResourceVersionNotFoundError,
+)
+from eke.application.resources.resource_classification_service import (
+    ResourceClassificationService,
 )
 from eke.application.resources.resource_provenance_service import (
     ResourceProvenanceService,
@@ -36,6 +41,9 @@ __all__ = [
     "ProvenanceRecordNotFoundError",
     "ResourceAlreadyExistsError",
     "ResourceApplicationError",
+    "ResourceClassificationAlreadyExistsError",
+    "ResourceClassificationNotFoundError",
+    "ResourceClassificationService",
     "ResourceNotFoundError",
     "ResourceProvenanceService",
     "ResourceRelationshipAlreadyExistsError",

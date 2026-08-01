@@ -17,6 +17,7 @@ from eke.presentation.api.errors import (
     register_exception_handlers,
 )
 from eke.presentation.api.routes import (
+    resource_classifications_router,
     resource_provenance_router,
     resource_relationships_router,
     resource_titles_router,
@@ -88,4 +89,5 @@ def create_app(
     app.include_router(resource_versions_router)
     app.include_router(resource_relationships_router)
     app.include_router(resource_provenance_router)
+    app.include_router(resource_classifications_router)
     return app

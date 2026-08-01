@@ -1,5 +1,9 @@
 """HTTP schema exports."""
 
+from eke.presentation.api.schemas.resource_classifications import (
+    ResourceClassificationCreateRequest,
+    ResourceClassificationResponse,
+)
 from eke.presentation.api.schemas.resource_provenance import (
     ProvenanceRecordCreateRequest,
     ProvenanceRecordResponse,
@@ -28,6 +32,8 @@ __all__ = [
     "BusinessIdentifierSchema",
     "ProvenanceRecordCreateRequest",
     "ProvenanceRecordResponse",
+    "ResourceClassificationCreateRequest",
+    "ResourceClassificationResponse",
     "ResourceCreateRequest",
     "ResourceRelationshipCreateRequest",
     "ResourceRelationshipResponse",

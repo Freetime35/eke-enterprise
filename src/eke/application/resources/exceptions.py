@@ -59,3 +59,15 @@ class ProvenanceRecordNotFoundError(ResourceApplicationError):
 
 class ProvenanceRecordConflictError(ResourceApplicationError):
     """Raised when provenance does not belong to the Resource."""
+
+
+class ResourceClassificationAlreadyExistsError(
+    ResourceApplicationError
+):
+    """Raised when a classification key is already assigned."""
+
+
+class ResourceClassificationNotFoundError(
+    ResourceApplicationError
+):
+    """Raised when a requested classification does not exist."""

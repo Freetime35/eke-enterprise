@@ -3,6 +3,7 @@
 from fastapi import Request
 
 from eke.application.resources import (
+    ResourceClassificationService,
     ResourceProvenanceService,
     ResourceRelationshipService,
     ResourceService,
@@ -51,3 +52,11 @@ def get_resource_provenance_service(
     return get_container(
         request
     ).resource_provenance_service()
+
+
+def get_resource_classification_service(
+    request: Request,
+) -> ResourceClassificationService:
+    return get_container(
+        request
+    ).resource_classification_service()
