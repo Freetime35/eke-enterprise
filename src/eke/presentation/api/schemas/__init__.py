@@ -1,5 +1,10 @@
 """HTTP schema exports."""
 
+from eke.presentation.api.schemas.errors import (
+    APIErrorResponse,
+    ValidationErrorItem,
+    ValidationErrorResponse,
+)
 from eke.presentation.api.schemas.resource_classifications import (
     ResourceClassificationCreateRequest,
     ResourceClassificationResponse,
@@ -29,6 +34,7 @@ from eke.presentation.api.schemas.resources import (
 )
 
 __all__ = [
+    "APIErrorResponse",
     "BusinessIdentifierSchema",
     "ProvenanceRecordCreateRequest",
     "ProvenanceRecordResponse",
@@ -44,4 +50,6 @@ __all__ = [
     "ResourceUpdateRequest",
     "ResourceVersionCreateRequest",
     "ResourceVersionResponse",
+    "ValidationErrorItem",
+    "ValidationErrorResponse",
 ]

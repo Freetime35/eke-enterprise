@@ -16,6 +16,10 @@ from eke.presentation.api.container import build_container
 from eke.presentation.api.errors import (
     register_exception_handlers,
 )
+from eke.presentation.api.openapi import (
+    OPENAPI_TAGS,
+    generate_operation_id,
+)
 from eke.presentation.api.routes import (
     resource_classifications_router,
     resource_provenance_router,
@@ -31,6 +35,7 @@ from eke.presentation.api.settings import APISettings
 def create_app(
     settings: APISettings | None = None,
 ) -> FastAPI:
+    """Create and configure the FastAPI application."""
     resolved_settings = (
         settings
         if settings is not None
@@ -75,13 +80,20 @@ def create_app(
     app = FastAPI(
         title=resolved_settings.application_name,
         version=resolved_settings.application_version,
+        description=(
+            "Enterprise API for canonical legal knowledge "
+            "engineering."
+        ),
         docs_url=docs_url,
         redoc_url=redoc_url,
         openapi_url=openapi_url,
+        openapi_tags=OPENAPI_TAGS,
+        generate_unique_id_function=generate_operation_id,
         lifespan=lifespan,
     )
     app.state.settings = resolved_settings
     app.state.ready = False
+
     register_exception_handlers(app)
     app.include_router(system_router)
     app.include_router(resources_router)
@@ -90,4 +102,5 @@ def create_app(
     app.include_router(resource_relationships_router)
     app.include_router(resource_provenance_router)
     app.include_router(resource_classifications_router)
+
     return app
