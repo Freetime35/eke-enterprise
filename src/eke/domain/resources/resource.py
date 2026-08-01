@@ -7,7 +7,7 @@ EKE Enterprise.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 
 from eke.domain.identity import (
     BusinessIdentifier,
@@ -16,6 +16,11 @@ from eke.domain.identity import (
     ResourceVersionUUID,
 )
 from eke.domain.localization import LanguageCode
+from eke.domain.provenance import (
+    AcquisitionMethod,
+    ProvenanceRecord,
+    ProvenanceSource,
+)
 from eke.domain.relationships import (
     RelationshipType,
     ResourceRelationship,
@@ -30,11 +35,6 @@ from eke.domain.resources.resource_version import ResourceVersion
 class Resource:
     """Represent a canonical resource managed by EKE Enterprise.
 
-    A Resource owns one immutable internal identifier, one or more
-    external business identifiers, a canonical type and lifecycle
-    status, optional title and version collections, and directed
-    relationships that originate from the resource.
-
     Attributes:
         resource_uuid: Immutable internal resource identity.
         identifiers: External business identifiers assigned to the resource.
@@ -43,6 +43,7 @@ class Resource:
         titles: Localized temporal titles owned by the resource.
         versions: Canonical versions owned by the resource.
         relationships: Directed relationships originating from the resource.
+        provenance_records: Acquisition provenance owned by the resource.
     """
 
     resource_uuid: ResourceUUID
@@ -52,6 +53,7 @@ class Resource:
     titles: tuple[ResourceTitle, ...] = ()
     versions: tuple[ResourceVersion, ...] = ()
     relationships: tuple[ResourceRelationship, ...] = ()
+    provenance_records: tuple[ProvenanceRecord, ...] = ()
 
     def __post_init__(self) -> None:
         """Validate aggregate invariants."""
@@ -63,6 +65,7 @@ class Resource:
         self._validate_titles()
         self._validate_versions()
         self._validate_relationships()
+        self._validate_provenance_records()
 
     def _validate_identifiers(self) -> None:
         if not isinstance(self.identifiers, tuple):
@@ -183,6 +186,32 @@ class Resource:
             raise ValueError(
                 "all resource relationships must originate "
                 "from the resource"
+            )
+
+    def _validate_provenance_records(self) -> None:
+        if not isinstance(self.provenance_records, tuple):
+            raise TypeError("provenance_records must be a tuple")
+
+        if not all(
+            isinstance(record, ProvenanceRecord)
+            for record in self.provenance_records
+        ):
+            raise TypeError(
+                "provenance_records must contain only "
+                "ProvenanceRecord instances"
+            )
+
+        if len(set(self.provenance_records)) != len(
+            self.provenance_records
+        ):
+            raise ValueError("provenance records must be unique")
+
+        if not all(
+            record.belongs_to(self.resource_uuid)
+            for record in self.provenance_records
+        ):
+            raise ValueError(
+                "all provenance records must belong to the resource"
             )
 
     def has_identifier(self, identifier: BusinessIdentifier) -> bool:
@@ -336,4 +365,72 @@ class Resource:
             relationship
             for relationship in self.relationships
             if relationship.is_active_on(value)
+        )
+
+    def provenance_from(
+        self,
+        source: ProvenanceSource,
+    ) -> tuple[ProvenanceRecord, ...]:
+        """Return provenance records from a canonical source."""
+        if not isinstance(source, ProvenanceSource):
+            raise TypeError("source must be a ProvenanceSource")
+
+        return tuple(
+            record
+            for record in self.provenance_records
+            if record.comes_from(source)
+        )
+
+    def provenance_acquired_by(
+        self,
+        acquisition_method: AcquisitionMethod,
+    ) -> tuple[ProvenanceRecord, ...]:
+        """Return provenance records acquired by a method."""
+        if not isinstance(
+            acquisition_method,
+            AcquisitionMethod,
+        ):
+            raise TypeError(
+                "acquisition_method must be an AcquisitionMethod"
+            )
+
+        return tuple(
+            record
+            for record in self.provenance_records
+            if record.was_acquired_by(acquisition_method)
+        )
+
+    def provenance_acquired_between(
+        self,
+        start: datetime,
+        end: datetime,
+    ) -> tuple[ProvenanceRecord, ...]:
+        """Return records acquired within an inclusive datetime range."""
+        if not isinstance(start, datetime):
+            raise TypeError("start must be a datetime")
+
+        if not isinstance(end, datetime):
+            raise TypeError("end must be a datetime")
+
+        if start.tzinfo is None or start.utcoffset() is None:
+            raise ValueError("start must be timezone-aware")
+
+        if end.tzinfo is None or end.utcoffset() is None:
+            raise ValueError("end must be timezone-aware")
+
+        if start > end:
+            raise ValueError("start must not be later than end")
+
+        return tuple(
+            record
+            for record in self.provenance_records
+            if start <= record.acquired_at <= end
+        )
+
+    def latest_provenance_record(self) -> ProvenanceRecord | None:
+        """Return the most recently acquired provenance record."""
+        return max(
+            self.provenance_records,
+            key=lambda record: record.acquired_at,
+            default=None,
         )
