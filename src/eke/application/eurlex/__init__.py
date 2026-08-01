@@ -29,6 +29,12 @@ from eke.application.eurlex.full_resource_mapper import (
 from eke.application.eurlex.import_job_repository import (
     ImportJobRepository,
 )
+from eke.application.eurlex.import_job_service import (
+    BulkImportExecutor,
+    EurLexImportJobService,
+    ImportJobNotFoundError,
+    ImportJobStateError,
+)
 from eke.application.eurlex.import_result import EurLexImportResult
 from eke.application.eurlex.import_service import (
     EurLexResourceImportService,
@@ -45,6 +51,7 @@ from eke.application.eurlex.resource_mapper import (
 )
 
 __all__ = [
+    "BulkImportExecutor",
     "EurLexBulkImportItem",
     "EurLexBulkImportResult",
     "EurLexBulkImportService",
@@ -54,6 +61,7 @@ __all__ = [
     "EurLexClientError",
     "EurLexDocument",
     "EurLexDocumentNotFoundError",
+    "EurLexImportJobService",
     "EurLexImportResult",
     "EurLexMalformedMetadataError",
     "EurLexMetadata",
@@ -65,7 +73,9 @@ __all__ = [
     "EurLexTitle",
     "EurLexUnsupportedMediaTypeError",
     "EurLexUpstreamError",
+    "ImportJobNotFoundError",
     "ImportJobRepository",
+    "ImportJobStateError",
     "map_classifications",
     "map_relationships",
     "map_resource_status",
