@@ -9,6 +9,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 
+from eke.domain.classification import (
+    ClassificationConcept,
+    ClassificationScheme,
+)
 from eke.domain.identity import (
     BusinessIdentifier,
     IdentifierScheme,
@@ -44,6 +48,7 @@ class Resource:
         versions: Canonical versions owned by the resource.
         relationships: Directed relationships originating from the resource.
         provenance_records: Acquisition provenance owned by the resource.
+        classifications: Canonical classification concepts assigned to the resource.
     """
 
     resource_uuid: ResourceUUID
@@ -54,6 +59,7 @@ class Resource:
     versions: tuple[ResourceVersion, ...] = ()
     relationships: tuple[ResourceRelationship, ...] = ()
     provenance_records: tuple[ProvenanceRecord, ...] = ()
+    classifications: tuple[ClassificationConcept, ...] = ()
 
     def __post_init__(self) -> None:
         """Validate aggregate invariants."""
@@ -66,6 +72,7 @@ class Resource:
         self._validate_versions()
         self._validate_relationships()
         self._validate_provenance_records()
+        self._validate_classifications()
 
     def _validate_identifiers(self) -> None:
         if not isinstance(self.identifiers, tuple):
@@ -213,6 +220,38 @@ class Resource:
             raise ValueError(
                 "all provenance records must belong to the resource"
             )
+
+    def _validate_classifications(self) -> None:
+        if not isinstance(self.classifications, tuple):
+            raise TypeError("classifications must be a tuple")
+
+        if not all(
+            isinstance(classification, ClassificationConcept)
+            for classification in self.classifications
+        ):
+            raise TypeError(
+                "classifications must contain only "
+                "ClassificationConcept instances"
+            )
+
+        if len(set(self.classifications)) != len(self.classifications):
+            raise ValueError("resource classifications must be unique")
+
+        seen_keys: set[
+            tuple[ClassificationScheme, str, LanguageCode]
+        ] = set()
+        for classification in self.classifications:
+            key = (
+                classification.scheme,
+                classification.code,
+                classification.language,
+            )
+            if key in seen_keys:
+                raise ValueError(
+                    "resource classifications must not repeat the same "
+                    "scheme, code, and language"
+                )
+            seen_keys.add(key)
 
     def has_identifier(self, identifier: BusinessIdentifier) -> bool:
         """Return whether the resource owns the given identifier."""
@@ -433,4 +472,69 @@ class Resource:
             self.provenance_records,
             key=lambda record: record.acquired_at,
             default=None,
+        )
+
+    def classifications_in_scheme(
+        self,
+        scheme: ClassificationScheme,
+    ) -> tuple[ClassificationConcept, ...]:
+        """Return classifications belonging to a scheme."""
+        if not isinstance(scheme, ClassificationScheme):
+            raise TypeError(
+                "scheme must be a ClassificationScheme"
+            )
+
+        return tuple(
+            classification
+            for classification in self.classifications
+            if classification.belongs_to_scheme(scheme)
+        )
+
+    def classifications_with_code(
+        self,
+        scheme: ClassificationScheme,
+        code: str,
+    ) -> tuple[ClassificationConcept, ...]:
+        """Return classifications matching scheme and exact code."""
+        if not isinstance(scheme, ClassificationScheme):
+            raise TypeError(
+                "scheme must be a ClassificationScheme"
+            )
+
+        if not isinstance(code, str):
+            raise TypeError("code must be a string")
+
+        return tuple(
+            classification
+            for classification in self.classifications
+            if classification.belongs_to_scheme(scheme)
+            and classification.has_code(code)
+        )
+
+    def classifications_for_language(
+        self,
+        language: LanguageCode,
+    ) -> tuple[ClassificationConcept, ...]:
+        """Return classifications labelled in a language."""
+        if not isinstance(language, LanguageCode):
+            raise TypeError("language must be a LanguageCode")
+
+        return tuple(
+            classification
+            for classification in self.classifications
+            if classification.has_language(language)
+        )
+
+    def classifications_valid_on(
+        self,
+        value: date,
+    ) -> tuple[ClassificationConcept, ...]:
+        """Return classifications valid on a date."""
+        if not isinstance(value, date):
+            raise TypeError("value must be a date")
+
+        return tuple(
+            classification
+            for classification in self.classifications
+            if classification.is_valid_on(value)
         )
