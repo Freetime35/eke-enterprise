@@ -45,3 +45,17 @@ class ResourceRelationshipNotFoundError(ResourceApplicationError):
 
 class ResourceRelationshipConflictError(ResourceApplicationError):
     """Raised when a relationship operation is inconsistent."""
+
+
+class ProvenanceRecordAlreadyExistsError(
+    ResourceApplicationError
+):
+    """Raised when an identical ProvenanceRecord already exists."""
+
+
+class ProvenanceRecordNotFoundError(ResourceApplicationError):
+    """Raised when a requested ProvenanceRecord does not exist."""
+
+
+class ProvenanceRecordConflictError(ResourceApplicationError):
+    """Raised when provenance does not belong to the Resource."""

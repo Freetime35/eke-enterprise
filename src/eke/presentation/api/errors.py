@@ -4,6 +4,9 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from eke.application.resources import (
+    ProvenanceRecordAlreadyExistsError,
+    ProvenanceRecordConflictError,
+    ProvenanceRecordNotFoundError,
     ResourceAlreadyExistsError,
     ResourceNotFoundError,
     ResourceRelationshipAlreadyExistsError,
@@ -146,6 +149,45 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code=404,
             content={
                 "code": "resource_relationship_not_found",
+                "detail": str(exception),
+            },
+        )
+
+    @app.exception_handler(ProvenanceRecordAlreadyExistsError)
+    async def provenance_exists_handler(
+        _request: Request,
+        exception: ProvenanceRecordAlreadyExistsError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "code": "provenance_record_conflict",
+                "detail": str(exception),
+            },
+        )
+
+    @app.exception_handler(ProvenanceRecordConflictError)
+    async def provenance_conflict_handler(
+        _request: Request,
+        exception: ProvenanceRecordConflictError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "code": "provenance_record_conflict",
+                "detail": str(exception),
+            },
+        )
+
+    @app.exception_handler(ProvenanceRecordNotFoundError)
+    async def provenance_not_found_handler(
+        _request: Request,
+        exception: ProvenanceRecordNotFoundError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "code": "provenance_record_not_found",
                 "detail": str(exception),
             },
         )

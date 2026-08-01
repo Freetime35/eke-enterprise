@@ -3,6 +3,7 @@
 from fastapi import Request
 
 from eke.application.resources import (
+    ResourceProvenanceService,
     ResourceRelationshipService,
     ResourceService,
     ResourceTitleService,
@@ -42,3 +43,11 @@ def get_resource_relationship_service(
     return get_container(
         request
     ).resource_relationship_service()
+
+
+def get_resource_provenance_service(
+    request: Request,
+) -> ResourceProvenanceService:
+    return get_container(
+        request
+    ).resource_provenance_service()

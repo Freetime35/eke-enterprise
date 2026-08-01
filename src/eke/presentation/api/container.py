@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from eke.application import UnitOfWork
 from eke.application.resources import (
+    ResourceProvenanceService,
     ResourceRelationshipService,
     ResourceService,
     ResourceTitleService,
@@ -37,6 +38,13 @@ class ApplicationContainer:
         self,
     ) -> ResourceRelationshipService:
         return ResourceRelationshipService(
+            self.unit_of_work_factory
+        )
+
+    def resource_provenance_service(
+        self,
+    ) -> ResourceProvenanceService:
+        return ResourceProvenanceService(
             self.unit_of_work_factory
         )
 

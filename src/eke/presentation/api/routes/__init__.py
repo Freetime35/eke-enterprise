@@ -1,5 +1,8 @@
 """HTTP route modules."""
 
+from eke.presentation.api.routes.resource_provenance import (
+    router as resource_provenance_router,
+)
 from eke.presentation.api.routes.resource_relationships import (
     router as resource_relationships_router,
 )
@@ -17,6 +20,7 @@ from eke.presentation.api.routes.system import (
 )
 
 __all__ = [
+    "resource_provenance_router",
     "resource_relationships_router",
     "resource_titles_router",
     "resource_versions_router",

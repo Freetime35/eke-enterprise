@@ -1,6 +1,9 @@
 """Resource application services."""
 
 from eke.application.resources.exceptions import (
+    ProvenanceRecordAlreadyExistsError,
+    ProvenanceRecordConflictError,
+    ProvenanceRecordNotFoundError,
     ResourceAlreadyExistsError,
     ResourceApplicationError,
     ResourceNotFoundError,
@@ -12,6 +15,9 @@ from eke.application.resources.exceptions import (
     ResourceVersionAlreadyExistsError,
     ResourceVersionConflictError,
     ResourceVersionNotFoundError,
+)
+from eke.application.resources.resource_provenance_service import (
+    ResourceProvenanceService,
 )
 from eke.application.resources.resource_relationship_service import (
     ResourceRelationshipService,
@@ -25,9 +31,13 @@ from eke.application.resources.resource_version_service import (
 )
 
 __all__ = [
+    "ProvenanceRecordAlreadyExistsError",
+    "ProvenanceRecordConflictError",
+    "ProvenanceRecordNotFoundError",
     "ResourceAlreadyExistsError",
     "ResourceApplicationError",
     "ResourceNotFoundError",
+    "ResourceProvenanceService",
     "ResourceRelationshipAlreadyExistsError",
     "ResourceRelationshipConflictError",
     "ResourceRelationshipNotFoundError",
