@@ -16,6 +16,10 @@ from eke.domain.identity import (
     ResourceVersionUUID,
 )
 from eke.domain.localization import LanguageCode
+from eke.domain.relationships import (
+    RelationshipType,
+    ResourceRelationship,
+)
 from eke.domain.resources.resource_status import ResourceStatus
 from eke.domain.resources.resource_title import ResourceTitle
 from eke.domain.resources.resource_type import ResourceType
@@ -28,7 +32,8 @@ class Resource:
 
     A Resource owns one immutable internal identifier, one or more
     external business identifiers, a canonical type and lifecycle
-    status, and optional title and version collections.
+    status, optional title and version collections, and directed
+    relationships that originate from the resource.
 
     Attributes:
         resource_uuid: Immutable internal resource identity.
@@ -37,6 +42,7 @@ class Resource:
         status: Canonical lifecycle status.
         titles: Localized temporal titles owned by the resource.
         versions: Canonical versions owned by the resource.
+        relationships: Directed relationships originating from the resource.
     """
 
     resource_uuid: ResourceUUID
@@ -45,6 +51,7 @@ class Resource:
     status: ResourceStatus = ResourceStatus.UNKNOWN
     titles: tuple[ResourceTitle, ...] = ()
     versions: tuple[ResourceVersion, ...] = ()
+    relationships: tuple[ResourceRelationship, ...] = ()
 
     def __post_init__(self) -> None:
         """Validate aggregate invariants."""
@@ -55,6 +62,7 @@ class Resource:
         self._validate_resource_type_and_status()
         self._validate_titles()
         self._validate_versions()
+        self._validate_relationships()
 
     def _validate_identifiers(self) -> None:
         if not isinstance(self.identifiers, tuple):
@@ -151,6 +159,31 @@ class Resource:
                     "previous resource version must belong to "
                     "the same aggregate"
                 )
+
+    def _validate_relationships(self) -> None:
+        if not isinstance(self.relationships, tuple):
+            raise TypeError("relationships must be a tuple")
+
+        if not all(
+            isinstance(relationship, ResourceRelationship)
+            for relationship in self.relationships
+        ):
+            raise TypeError(
+                "relationships must contain only "
+                "ResourceRelationship instances"
+            )
+
+        if len(set(self.relationships)) != len(self.relationships):
+            raise ValueError("resource relationships must be unique")
+
+        if not all(
+            relationship.originates_from(self.resource_uuid)
+            for relationship in self.relationships
+        ):
+            raise ValueError(
+                "all resource relationships must originate "
+                "from the resource"
+            )
 
     def has_identifier(self, identifier: BusinessIdentifier) -> bool:
         """Return whether the resource owns the given identifier."""
@@ -259,4 +292,48 @@ class Resource:
             version
             for version in self.versions
             if version.is_valid_on(value)
+        )
+
+    def relationships_of_type(
+        self,
+        relationship_type: RelationshipType,
+    ) -> tuple[ResourceRelationship, ...]:
+        """Return relationships matching a canonical type."""
+        if not isinstance(relationship_type, RelationshipType):
+            raise TypeError(
+                "relationship_type must be a RelationshipType"
+            )
+
+        return tuple(
+            relationship
+            for relationship in self.relationships
+            if relationship.relationship_type is relationship_type
+        )
+
+    def relationships_to(
+        self,
+        target: ResourceUUID,
+    ) -> tuple[ResourceRelationship, ...]:
+        """Return relationships pointing to a target resource."""
+        if not isinstance(target, ResourceUUID):
+            raise TypeError("target must be a ResourceUUID")
+
+        return tuple(
+            relationship
+            for relationship in self.relationships
+            if relationship.points_to(target)
+        )
+
+    def active_relationships_on(
+        self,
+        value: date,
+    ) -> tuple[ResourceRelationship, ...]:
+        """Return relationships active on a date."""
+        if not isinstance(value, date):
+            raise TypeError("value must be a date")
+
+        return tuple(
+            relationship
+            for relationship in self.relationships
+            if relationship.is_active_on(value)
         )
