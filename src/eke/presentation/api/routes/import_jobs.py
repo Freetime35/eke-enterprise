@@ -34,6 +34,7 @@ from eke.presentation.api.dependencies import (
 from eke.presentation.api.schemas import (
     ImportJobCreateRequest,
     ImportJobLineageResponse,
+    ImportJobOperationalMetricsResponse,
     ImportJobResponse,
     ImportJobSearchResponse,
     ImportJobStatusSummaryResponse,
@@ -135,11 +136,32 @@ def search_import_jobs(
 def summarize_import_jobs(
     service: ImportJobServiceDependency,
 ) -> ImportJobStatusSummaryResponse:
-    """Return aggregate counts for every lifecycle state."""
     summary = service.summarize_jobs()
     return ImportJobStatusSummaryResponse(
         total=summary.total,
         counts=summary.counts,
+    )
+
+
+@router.get(
+    "/metrics",
+    response_model=ImportJobOperationalMetricsResponse,
+    summary="Get EUR-Lex import job operational metrics",
+)
+def get_import_job_metrics(
+    service: ImportJobServiceDependency,
+) -> ImportJobOperationalMetricsResponse:
+    """Return operational indicators derived from job status."""
+    metrics = service.get_operational_metrics()
+    return ImportJobOperationalMetricsResponse(
+        total=metrics.total,
+        active=metrics.active,
+        terminal=metrics.terminal,
+        successful=metrics.successful,
+        unsuccessful=metrics.unsuccessful,
+        cancelled=metrics.cancelled,
+        completion_rate=metrics.completion_rate,
+        failure_rate=metrics.failure_rate,
     )
 
 

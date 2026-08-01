@@ -29,6 +29,9 @@ from eke.application.eurlex.full_resource_mapper import (
 from eke.application.eurlex.import_job_lineage import (
     ImportJobLineage,
 )
+from eke.application.eurlex.import_job_metrics import (
+    ImportJobOperationalMetrics,
+)
 from eke.application.eurlex.import_job_repository import (
     ImportJobRepository,
 )
@@ -90,6 +93,7 @@ __all__ = [
     "ImportJobLineage",
     "ImportJobLineageError",
     "ImportJobNotFoundError",
+    "ImportJobOperationalMetrics",
     "ImportJobRepository",
     "ImportJobSearchCriteria",
     "ImportJobSearchPage",

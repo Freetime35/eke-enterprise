@@ -75,6 +75,21 @@ class ImportJobStatusSummaryResponse(BaseModel):
     counts: dict[ImportJobStatus, int]
 
 
+class ImportJobOperationalMetricsResponse(BaseModel):
+    """Represent derived operational import-job indicators."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    total: int
+    active: int
+    terminal: int
+    successful: int
+    unsuccessful: int
+    cancelled: int
+    completion_rate: float
+    failure_rate: float
+
+
 class ImportJobSubmissionResponse(BaseModel):
     """Confirm asynchronous acceptance of an import job."""
 

@@ -15,6 +15,9 @@ from eke.application.eurlex.bulk_import import (
 from eke.application.eurlex.import_job_lineage import (
     ImportJobLineage,
 )
+from eke.application.eurlex.import_job_metrics import (
+    ImportJobOperationalMetrics,
+)
 from eke.application.eurlex.import_job_repository import (
     ImportJobRepository,
 )
@@ -170,6 +173,14 @@ class EurLexImportJobService:
         return ImportJobStatusSummary(
             total=sum(counts.values()),
             counts=counts,
+        )
+
+    def get_operational_metrics(
+        self,
+    ) -> ImportJobOperationalMetrics:
+        """Return operational indicators derived from job status."""
+        return ImportJobOperationalMetrics.from_summary(
+            self.summarize_jobs()
         )
 
     def search_jobs(
