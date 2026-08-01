@@ -42,6 +42,17 @@ class ImportJobResponse(BaseModel):
     error_detail: str | None
 
 
+class ImportJobSearchResponse(BaseModel):
+    """Represent one paginated import-job search result."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[ImportJobResponse]
+    total: int
+    limit: int
+    offset: int
+
+
 class ImportJobSubmissionResponse(BaseModel):
     """Confirm asynchronous acceptance of an import job."""
 

@@ -15,6 +15,8 @@ from eke.application.eurlex import (
     EurLexImportJobService,
     ImportJobNotFoundError,
     ImportJobStateError,
+    ImportJobSearchCriteria,
+    ImportJobSearchPage,
 )
 from eke.domain.identity import CelexIdentifier
 from eke.domain.imports import ImportJob, ImportJobStatus
@@ -36,6 +38,19 @@ class Repository:
 
     def exists(self, job_uuid: UUID) -> bool:
         return job_uuid in self.jobs
+    
+    def search(
+        self,
+        criteria: ImportJobSearchCriteria,
+    ) -> ImportJobSearchPage:
+        jobs = tuple(self.jobs.values())
+
+        return ImportJobSearchPage(
+            items=jobs,
+            total=len(jobs),
+            limit=criteria.limit,
+            offset=criteria.offset,
+        )
 
 
 class SuccessfulExecutor:

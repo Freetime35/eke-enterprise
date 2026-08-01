@@ -173,7 +173,10 @@ def test_operation_ids_are_unique_and_stable(
         "eurlex_import_jobs_submit_import_job"
         in operation_ids
     )
-
+    assert (
+        "eurlex_import_jobs_search_import_jobs"
+        in operation_ids
+)
 def test_openapi_contains_validation_error_schema(
     tmp_path: Path,
 ) -> None:

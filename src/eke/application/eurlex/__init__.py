@@ -29,6 +29,10 @@ from eke.application.eurlex.full_resource_mapper import (
 from eke.application.eurlex.import_job_repository import (
     ImportJobRepository,
 )
+from eke.application.eurlex.import_job_search import (
+    ImportJobSearchCriteria,
+    ImportJobSearchPage,
+)
 from eke.application.eurlex.import_job_service import (
     BulkImportExecutor,
     EurLexImportJobService,
@@ -78,6 +82,8 @@ __all__ = [
     "EurLexUpstreamError",
     "ImportJobNotFoundError",
     "ImportJobRepository",
+    "ImportJobSearchCriteria",
+    "ImportJobSearchPage",
     "ImportJobStateError",
     "ImportJobWorker",
     "map_classifications",

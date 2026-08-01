@@ -15,6 +15,10 @@ from eke.application.eurlex.bulk_import import (
 from eke.application.eurlex.import_job_repository import (
     ImportJobRepository,
 )
+from eke.application.eurlex.import_job_search import (
+    ImportJobSearchCriteria,
+    ImportJobSearchPage,
+)
 from eke.domain.identity import CelexIdentifier
 from eke.domain.imports import ImportJob, ImportJobStatus
 
@@ -38,7 +42,7 @@ class ImportJobStateError(Exception):
 
 
 class EurLexImportJobService:
-    """Create, retrieve, and execute persistent import jobs."""
+    """Create, retrieve, search, and execute import jobs."""
 
     def __init__(
         self,
@@ -109,6 +113,20 @@ class EurLexImportJobService:
                 f"import job not found: {job_uuid}"
             )
         return job
+
+    def search_jobs(
+        self,
+        criteria: ImportJobSearchCriteria,
+    ) -> ImportJobSearchPage:
+        """Return one stable filtered page of import jobs."""
+        if not isinstance(
+            criteria,
+            ImportJobSearchCriteria,
+        ):
+            raise TypeError(
+                "criteria must be an ImportJobSearchCriteria"
+            )
+        return self._repository.search(criteria)
 
     def run_job(self, job_uuid: UUID) -> ImportJob:
         """Execute a pending job and persist each transition."""

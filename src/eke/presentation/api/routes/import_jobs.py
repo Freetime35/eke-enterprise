@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from json import loads
 from typing import Annotated, Any
 from uuid import UUID
@@ -10,6 +11,7 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    Query,
     Response,
     status,
 )
@@ -17,6 +19,7 @@ from fastapi import (
 from eke.application.eurlex import (
     EurLexImportJobService,
     ImportJobNotFoundError,
+    ImportJobSearchCriteria,
     ImportJobStateError,
     ImportJobWorker,
 )
@@ -30,6 +33,7 @@ from eke.presentation.api.schemas import (
     APIErrorResponse,
     ImportJobCreateRequest,
     ImportJobResponse,
+    ImportJobSearchResponse,
     ImportJobSubmissionResponse,
 )
 
@@ -93,6 +97,63 @@ def create_import_job(
         f"/imports/eurlex/jobs/{job.job_uuid}"
     )
     return _to_response(job)
+
+
+@router.get(
+    "",
+    response_model=ImportJobSearchResponse,
+    summary="Search EUR-Lex import jobs",
+)
+def search_import_jobs(
+    service: ImportJobServiceDependency,
+    job_status: Annotated[
+        ImportJobStatus | None,
+        Query(alias="status"),
+    ] = None,
+    created_from: Annotated[
+        datetime | None,
+        Query(),
+    ] = None,
+    created_to: Annotated[
+        datetime | None,
+        Query(),
+    ] = None,
+    limit: Annotated[
+        int,
+        Query(ge=1, le=100),
+    ] = 20,
+    offset: Annotated[
+        int,
+        Query(ge=0),
+    ] = 0,
+) -> ImportJobSearchResponse:
+    """Return a stable filtered page of import jobs."""
+    try:
+        criteria = ImportJobSearchCriteria(
+            status=job_status,
+            created_from=created_from,
+            created_to=created_to,
+            limit=limit,
+            offset=offset,
+        )
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_422_UNPROCESSABLE_CONTENT
+            ),
+            detail=str(exc),
+        ) from exc
+
+    page = service.search_jobs(criteria)
+    return ImportJobSearchResponse(
+        items=[
+            _to_response(item)
+            for item in page.items
+        ],
+        total=page.total,
+        limit=page.limit,
+        offset=page.offset,
+    )
 
 
 @router.get(

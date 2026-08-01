@@ -6,9 +6,14 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from uuid import UUID
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
-from eke.application.eurlex import ImportJobRepository
+from eke.application.eurlex import (
+    ImportJobRepository,
+    ImportJobSearchCriteria,
+    ImportJobSearchPage,
+)
 from eke.domain.imports import ImportJob
 from eke.infrastructure.database.models import (
     ImportJobModel,
@@ -21,7 +26,7 @@ from eke.infrastructure.eurlex.import_job_codec import (
 
 
 class SQLAlchemyImportJobRepository:
-    """Persist import jobs through SQLAlchemy."""
+    """Persist and search import jobs through SQLAlchemy."""
 
     def __init__(
         self,
@@ -107,6 +112,62 @@ class SQLAlchemyImportJobRepository:
                 )
                 is not None
             )
+
+    def search(
+        self,
+        criteria: ImportJobSearchCriteria,
+    ) -> ImportJobSearchPage:
+        if not isinstance(
+            criteria,
+            ImportJobSearchCriteria,
+        ):
+            raise TypeError(
+                "criteria must be an ImportJobSearchCriteria"
+            )
+
+        filters = []
+        if criteria.status is not None:
+            filters.append(
+                ImportJobModel.status
+                == criteria.status.value
+            )
+        if criteria.created_from is not None:
+            filters.append(
+                ImportJobModel.created_at
+                >= criteria.created_from
+            )
+        if criteria.created_to is not None:
+            filters.append(
+                ImportJobModel.created_at
+                <= criteria.created_to
+            )
+
+        with self._session() as session:
+            total = session.scalar(
+                select(func.count())
+                .select_from(ImportJobModel)
+                .where(*filters)
+            )
+            models = session.scalars(
+                select(ImportJobModel)
+                .where(*filters)
+                .order_by(
+                    ImportJobModel.created_at.desc(),
+                    ImportJobModel.job_uuid.desc(),
+                )
+                .offset(criteria.offset)
+                .limit(criteria.limit)
+            ).all()
+
+        return ImportJobSearchPage(
+            items=tuple(
+                decode_import_job(model.payload)
+                for model in models
+            ),
+            total=int(total or 0),
+            limit=criteria.limit,
+            offset=criteria.offset,
+        )
 
     @staticmethod
     def _validate_job_uuid(job_uuid: UUID) -> None:
