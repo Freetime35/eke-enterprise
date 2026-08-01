@@ -26,6 +26,9 @@ from eke.application.eurlex.full_resource_mapper import (
     map_relationships,
     map_version,
 )
+from eke.application.eurlex.import_job_repository import (
+    ImportJobRepository,
+)
 from eke.application.eurlex.import_result import EurLexImportResult
 from eke.application.eurlex.import_service import (
     EurLexResourceImportService,
@@ -62,6 +65,7 @@ __all__ = [
     "EurLexTitle",
     "EurLexUnsupportedMediaTypeError",
     "EurLexUpstreamError",
+    "ImportJobRepository",
     "map_classifications",
     "map_relationships",
     "map_resource_status",

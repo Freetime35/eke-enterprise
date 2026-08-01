@@ -15,7 +15,7 @@ from eke.infrastructure.database import (
     upgrade_database,
 )
 
-INITIAL_REVISION = "20260801_0001"
+HEAD_REVISION = "20260801_0002"
 
 
 @pytest.fixture
@@ -32,13 +32,13 @@ def test_upgrade_head_creates_expected_schema(
     upgrade_database(engine)
 
     inspector = inspect(engine)
-
     assert set(inspector.get_table_names()) == {
         "alembic_version",
+        "import_jobs",
         "resource_identifiers",
         "resources",
     }
-    assert current_revision(engine) == INITIAL_REVISION
+    assert current_revision(engine) == HEAD_REVISION
 
     resource_columns = {
         column["name"]
@@ -46,6 +46,19 @@ def test_upgrade_head_creates_expected_schema(
     }
     assert resource_columns == {
         "resource_uuid",
+        "payload_version",
+        "payload",
+        "created_at",
+        "updated_at",
+    }
+
+    import_job_columns = {
+        column["name"]
+        for column in inspector.get_columns("import_jobs")
+    }
+    assert import_job_columns == {
+        "job_uuid",
+        "status",
         "payload_version",
         "payload",
         "created_at",
@@ -72,8 +85,9 @@ def test_upgrade_after_downgrade_is_reproducible(
     downgrade_database(engine)
     upgrade_database(engine)
 
-    assert current_revision(engine) == INITIAL_REVISION
+    assert current_revision(engine) == HEAD_REVISION
     assert "resources" in inspect(engine).get_table_names()
+    assert "import_jobs" in inspect(engine).get_table_names()
 
 
 def test_upgrade_is_idempotent_at_head(
@@ -82,7 +96,7 @@ def test_upgrade_is_idempotent_at_head(
     upgrade_database(engine)
     upgrade_database(engine)
 
-    assert current_revision(engine) == INITIAL_REVISION
+    assert current_revision(engine) == HEAD_REVISION
 
 
 def test_configuration_resolves_project_migrations() -> None:
@@ -91,7 +105,6 @@ def test_configuration_resolves_project_migrations() -> None:
     script_location = Path(
         config.get_main_option("script_location")
     )
-
     assert script_location.name == "migrations"
     assert script_location.is_dir()
 

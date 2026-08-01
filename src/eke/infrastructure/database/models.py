@@ -1,4 +1,4 @@
-"""SQLAlchemy ORM models for Resource persistence."""
+"""SQLAlchemy ORM models for Resource and import-job persistence."""
 
 from __future__ import annotations
 
@@ -36,7 +36,10 @@ class ResourceModel(Base):
         nullable=False,
         default=1,
     )
-    payload: Mapped[str] = mapped_column(Text, nullable=False)
+    payload: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -48,8 +51,9 @@ class ResourceModel(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
-
-    identifiers: Mapped[list[ResourceIdentifierModel]] = relationship(
+    identifiers: Mapped[
+        list[ResourceIdentifierModel]
+    ] = relationship(
         back_populates="resource",
         cascade="all, delete-orphan",
         passive_deletes=True,
@@ -98,7 +102,47 @@ class ResourceIdentifierModel(Base):
         Text,
         nullable=False,
     )
-
     resource: Mapped[ResourceModel] = relationship(
         back_populates="identifiers",
+    )
+
+
+class ImportJobModel(Base):
+    """Persistence model for a serialized import job."""
+
+    __tablename__ = "import_jobs"
+    __table_args__ = (
+        Index(
+            "ix_import_jobs_status_created_at",
+            "status",
+            "created_at",
+        ),
+    )
+
+    job_uuid: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+    )
+    payload_version: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+    )
+    payload: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
     )
