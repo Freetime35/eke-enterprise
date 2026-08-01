@@ -1,4 +1,4 @@
-"""Application-facing EUR-Lex client failures."""
+"""Application-facing EUR-Lex failures."""
 
 
 class EurLexClientError(Exception):
@@ -11,3 +11,19 @@ class EurLexDocumentNotFoundError(EurLexClientError):
 
 class EurLexUpstreamError(EurLexClientError):
     """Raised when the upstream service cannot fulfill a request."""
+
+
+class EurLexMetadataError(Exception):
+    """Base exception for metadata parsing failures."""
+
+
+class EurLexUnsupportedMediaTypeError(EurLexMetadataError):
+    """Raised when a document is not supported by the parser."""
+
+
+class EurLexMalformedMetadataError(EurLexMetadataError):
+    """Raised when the metadata payload is malformed."""
+
+
+class EurLexMetadataMismatchError(EurLexMetadataError):
+    """Raised when payload metadata references another CELEX."""
