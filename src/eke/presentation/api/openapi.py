@@ -46,6 +46,13 @@ OPENAPI_TAGS: list[dict[str, str]] = [
             "Manage controlled-vocabulary classification assignments."
         ),
     },
+    {
+        "name": "eurlex-imports",
+        "description": (
+            "Import canonical Resources from official EUR-Lex "
+            "metadata by CELEX identifier."
+        ),
+    },
 ]
 
 

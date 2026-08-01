@@ -12,6 +12,7 @@ from eke.infrastructure.database import (
     create_sqlite_engine,
     upgrade_database,
 )
+from eke.infrastructure.eurlex import HttpxEurLexClient
 from eke.presentation.api.container import build_container
 from eke.presentation.api.errors import (
     register_exception_handlers,
@@ -21,6 +22,7 @@ from eke.presentation.api.openapi import (
     generate_operation_id,
 )
 from eke.presentation.api.routes import (
+    eurlex_imports_router,
     resource_classifications_router,
     resource_provenance_router,
     resource_relationships_router,
@@ -53,16 +55,19 @@ def create_app(
         engine = create_sqlite_engine(
             resolved_settings.database_url
         )
+        eurlex_client = HttpxEurLexClient()
         upgrade_database(engine)
         app.state.container = build_container(
             engine,
             create_session_factory(engine),
+            eurlex_client=eurlex_client,
         )
         app.state.ready = True
         try:
             yield
         finally:
             app.state.ready = False
+            eurlex_client.close()
             engine.dispose()
 
     docs_url = (
@@ -102,5 +107,6 @@ def create_app(
     app.include_router(resource_relationships_router)
     app.include_router(resource_provenance_router)
     app.include_router(resource_classifications_router)
+    app.include_router(eurlex_imports_router)
 
     return app

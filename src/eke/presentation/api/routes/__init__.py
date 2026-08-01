@@ -1,5 +1,8 @@
 """HTTP route modules."""
 
+from eke.presentation.api.routes.eurlex_imports import (
+    router as eurlex_imports_router,
+)
 from eke.presentation.api.routes.resource_classifications import (
     router as resource_classifications_router,
 )
@@ -23,6 +26,7 @@ from eke.presentation.api.routes.system import (
 )
 
 __all__ = [
+    "eurlex_imports_router",
     "resource_classifications_router",
     "resource_provenance_router",
     "resource_relationships_router",

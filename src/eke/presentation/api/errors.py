@@ -3,6 +3,11 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from eke.application.eurlex import (
+    EurLexDocumentNotFoundError,
+    EurLexMetadataError,
+    EurLexUpstreamError,
+)
 from eke.application.resources import (
     ProvenanceRecordAlreadyExistsError,
     ProvenanceRecordConflictError,
@@ -23,17 +28,17 @@ from eke.application.resources import (
 
 
 def register_exception_handlers(app: FastAPI) -> None:
+    """Register stable application-to-HTTP error mappings."""
+
     @app.exception_handler(ResourceNotFoundError)
     async def resource_not_found_handler(
         _request: Request,
         exception: ResourceNotFoundError,
     ) -> JSONResponse:
-        return JSONResponse(
-            status_code=404,
-            content={
-                "code": "resource_not_found",
-                "detail": str(exception),
-            },
+        return _error_response(
+            404,
+            "resource_not_found",
+            exception,
         )
 
     @app.exception_handler(ResourceAlreadyExistsError)
@@ -41,12 +46,10 @@ def register_exception_handlers(app: FastAPI) -> None:
         _request: Request,
         exception: ResourceAlreadyExistsError,
     ) -> JSONResponse:
-        return JSONResponse(
-            status_code=409,
-            content={
-                "code": "resource_conflict",
-                "detail": str(exception),
-            },
+        return _error_response(
+            409,
+            "resource_conflict",
+            exception,
         )
 
     @app.exception_handler(ResourceTitleAlreadyExistsError)
@@ -54,12 +57,10 @@ def register_exception_handlers(app: FastAPI) -> None:
         _request: Request,
         exception: ResourceTitleAlreadyExistsError,
     ) -> JSONResponse:
-        return JSONResponse(
-            status_code=409,
-            content={
-                "code": "resource_title_conflict",
-                "detail": str(exception),
-            },
+        return _error_response(
+            409,
+            "resource_title_conflict",
+            exception,
         )
 
     @app.exception_handler(ResourceTitleNotFoundError)
@@ -67,38 +68,22 @@ def register_exception_handlers(app: FastAPI) -> None:
         _request: Request,
         exception: ResourceTitleNotFoundError,
     ) -> JSONResponse:
-        return JSONResponse(
-            status_code=404,
-            content={
-                "code": "resource_title_not_found",
-                "detail": str(exception),
-            },
+        return _error_response(
+            404,
+            "resource_title_not_found",
+            exception,
         )
 
     @app.exception_handler(ResourceVersionAlreadyExistsError)
-    async def version_exists_handler(
-        _request: Request,
-        exception: ResourceVersionAlreadyExistsError,
-    ) -> JSONResponse:
-        return JSONResponse(
-            status_code=409,
-            content={
-                "code": "resource_version_conflict",
-                "detail": str(exception),
-            },
-        )
-
     @app.exception_handler(ResourceVersionConflictError)
     async def version_conflict_handler(
         _request: Request,
-        exception: ResourceVersionConflictError,
+        exception: Exception,
     ) -> JSONResponse:
-        return JSONResponse(
-            status_code=409,
-            content={
-                "code": "resource_version_conflict",
-                "detail": str(exception),
-            },
+        return _error_response(
+            409,
+            "resource_version_conflict",
+            exception,
         )
 
     @app.exception_handler(ResourceVersionNotFoundError)
@@ -106,40 +91,24 @@ def register_exception_handlers(app: FastAPI) -> None:
         _request: Request,
         exception: ResourceVersionNotFoundError,
     ) -> JSONResponse:
-        return JSONResponse(
-            status_code=404,
-            content={
-                "code": "resource_version_not_found",
-                "detail": str(exception),
-            },
+        return _error_response(
+            404,
+            "resource_version_not_found",
+            exception,
         )
 
     @app.exception_handler(
         ResourceRelationshipAlreadyExistsError
     )
-    async def relationship_exists_handler(
-        _request: Request,
-        exception: ResourceRelationshipAlreadyExistsError,
-    ) -> JSONResponse:
-        return JSONResponse(
-            status_code=409,
-            content={
-                "code": "resource_relationship_conflict",
-                "detail": str(exception),
-            },
-        )
-
     @app.exception_handler(ResourceRelationshipConflictError)
     async def relationship_conflict_handler(
         _request: Request,
-        exception: ResourceRelationshipConflictError,
+        exception: Exception,
     ) -> JSONResponse:
-        return JSONResponse(
-            status_code=409,
-            content={
-                "code": "resource_relationship_conflict",
-                "detail": str(exception),
-            },
+        return _error_response(
+            409,
+            "resource_relationship_conflict",
+            exception,
         )
 
     @app.exception_handler(ResourceRelationshipNotFoundError)
@@ -147,38 +116,22 @@ def register_exception_handlers(app: FastAPI) -> None:
         _request: Request,
         exception: ResourceRelationshipNotFoundError,
     ) -> JSONResponse:
-        return JSONResponse(
-            status_code=404,
-            content={
-                "code": "resource_relationship_not_found",
-                "detail": str(exception),
-            },
+        return _error_response(
+            404,
+            "resource_relationship_not_found",
+            exception,
         )
 
     @app.exception_handler(ProvenanceRecordAlreadyExistsError)
-    async def provenance_exists_handler(
-        _request: Request,
-        exception: ProvenanceRecordAlreadyExistsError,
-    ) -> JSONResponse:
-        return JSONResponse(
-            status_code=409,
-            content={
-                "code": "provenance_record_conflict",
-                "detail": str(exception),
-            },
-        )
-
     @app.exception_handler(ProvenanceRecordConflictError)
     async def provenance_conflict_handler(
         _request: Request,
-        exception: ProvenanceRecordConflictError,
+        exception: Exception,
     ) -> JSONResponse:
-        return JSONResponse(
-            status_code=409,
-            content={
-                "code": "provenance_record_conflict",
-                "detail": str(exception),
-            },
+        return _error_response(
+            409,
+            "provenance_record_conflict",
+            exception,
         )
 
     @app.exception_handler(ProvenanceRecordNotFoundError)
@@ -186,27 +139,23 @@ def register_exception_handlers(app: FastAPI) -> None:
         _request: Request,
         exception: ProvenanceRecordNotFoundError,
     ) -> JSONResponse:
-        return JSONResponse(
-            status_code=404,
-            content={
-                "code": "provenance_record_not_found",
-                "detail": str(exception),
-            },
+        return _error_response(
+            404,
+            "provenance_record_not_found",
+            exception,
         )
 
     @app.exception_handler(
         ResourceClassificationAlreadyExistsError
     )
-    async def classification_exists_handler(
+    async def classification_conflict_handler(
         _request: Request,
         exception: ResourceClassificationAlreadyExistsError,
     ) -> JSONResponse:
-        return JSONResponse(
-            status_code=409,
-            content={
-                "code": "resource_classification_conflict",
-                "detail": str(exception),
-            },
+        return _error_response(
+            409,
+            "resource_classification_conflict",
+            exception,
         )
 
     @app.exception_handler(ResourceClassificationNotFoundError)
@@ -214,10 +163,55 @@ def register_exception_handlers(app: FastAPI) -> None:
         _request: Request,
         exception: ResourceClassificationNotFoundError,
     ) -> JSONResponse:
-        return JSONResponse(
-            status_code=404,
-            content={
-                "code": "resource_classification_not_found",
-                "detail": str(exception),
-            },
+        return _error_response(
+            404,
+            "resource_classification_not_found",
+            exception,
         )
+
+    @app.exception_handler(EurLexDocumentNotFoundError)
+    async def eurlex_not_found_handler(
+        _request: Request,
+        exception: EurLexDocumentNotFoundError,
+    ) -> JSONResponse:
+        return _error_response(
+            404,
+            "eurlex_document_not_found",
+            exception,
+        )
+
+    @app.exception_handler(EurLexUpstreamError)
+    async def eurlex_upstream_handler(
+        _request: Request,
+        exception: EurLexUpstreamError,
+    ) -> JSONResponse:
+        return _error_response(
+            502,
+            "eurlex_upstream_error",
+            exception,
+        )
+
+    @app.exception_handler(EurLexMetadataError)
+    async def eurlex_metadata_handler(
+        _request: Request,
+        exception: EurLexMetadataError,
+    ) -> JSONResponse:
+        return _error_response(
+            502,
+            "eurlex_metadata_error",
+            exception,
+        )
+
+
+def _error_response(
+    status_code: int,
+    code: str,
+    exception: Exception,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "code": code,
+            "detail": str(exception),
+        },
+    )

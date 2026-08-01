@@ -17,6 +17,7 @@ EXPECTED_TAGS = {
     "resource-relationships",
     "resource-provenance",
     "resource-classifications",
+    "eurlex-imports",
 }
 
 EXPECTED_PATHS = {
@@ -40,6 +41,7 @@ EXPECTED_PATHS = {
         "/resources/{resource_uuid}/classifications/"
         "{scheme}/{code}/{language}"
     ),
+    "/imports/eurlex",
 }
 
 
@@ -135,6 +137,10 @@ def test_operation_ids_are_unique_and_stable(
     )
     assert (
         "resource_classifications_add_resource_classification"
+        in operation_ids
+    )
+    assert (
+        "eurlex_imports_import_eurlex_resource"
         in operation_ids
     )
 
