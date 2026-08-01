@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from types import TracebackType
-from typing import Protocol, runtime_checkable
+from typing import Protocol, Self, runtime_checkable
 
 from eke.domain.repositories import ResourceRepository
 
@@ -10,10 +10,14 @@ from eke.domain.repositories import ResourceRepository
 class UnitOfWork(Protocol):
     """Define an atomic application transaction boundary."""
 
-    resources: ResourceRepository
+    @property
+    def resources(self) -> ResourceRepository:
+        """Return the Resource repository for this transaction."""
+        ...
 
-    def __enter__(self) -> UnitOfWork:
+    def __enter__(self) -> Self:
         """Open the unit of work and return it."""
+        ...
 
     def __exit__(
         self,
@@ -22,9 +26,12 @@ class UnitOfWork(Protocol):
         traceback: TracebackType | None,
     ) -> bool | None:
         """Close the unit of work, rolling back when necessary."""
+        ...
 
     def commit(self) -> None:
         """Commit all changes performed in the unit of work."""
+        ...
 
     def rollback(self) -> None:
         """Roll back all uncommitted changes."""
+        ...
