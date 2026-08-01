@@ -7,25 +7,29 @@ from fastapi.routing import APIRoute
 OPENAPI_TAGS: list[dict[str, str]] = [
     {
         "name": "system",
-        "description": "Application health and readiness endpoints.",
+        "description": (
+            "Application health and readiness endpoints."
+        ),
     },
     {
         "name": "resources",
         "description": (
-            "Create, retrieve, update, delete, search, and paginate "
-            "canonical legal resources."
+            "Create, retrieve, update, delete, search, and "
+            "paginate canonical legal resources."
         ),
     },
     {
         "name": "resource-titles",
         "description": (
-            "Manage localized and temporally valid Resource titles."
+            "Manage localized and temporally valid Resource "
+            "titles."
         ),
     },
     {
         "name": "resource-versions",
         "description": (
-            "Manage ordered Resource versions and version history."
+            "Manage ordered Resource versions and version "
+            "history."
         ),
     },
     {
@@ -43,7 +47,8 @@ OPENAPI_TAGS: list[dict[str, str]] = [
     {
         "name": "resource-classifications",
         "description": (
-            "Manage controlled-vocabulary classification assignments."
+            "Manage controlled-vocabulary classification "
+            "assignments."
         ),
     },
     {
@@ -53,12 +58,23 @@ OPENAPI_TAGS: list[dict[str, str]] = [
             "metadata by CELEX identifier."
         ),
     },
+    {
+        "name": "eurlex-import-jobs",
+        "description": (
+            "Create, inspect, and synchronously run persistent "
+            "EUR-Lex import jobs."
+        ),
+    },
 ]
 
 
 def generate_operation_id(route: APIRoute) -> str:
-    """Generate a deterministic operation identifier from tag and name."""
-    raw_tag = route.tags[0] if route.tags else "default"
+    """Generate a deterministic operation identifier."""
+    raw_tag = (
+        route.tags[0]
+        if route.tags
+        else "default"
+    )
     tag = str(raw_tag)
     normalized_tag = tag.replace("-", "_")
     return f"{normalized_tag}_{route.name}"

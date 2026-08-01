@@ -12,8 +12,10 @@ from eke.application import UnitOfWork
 from eke.application.eurlex import (
     EurLexBulkImportService,
     EurLexClient,
+    EurLexImportJobService,
     EurLexMetadataParser,
     EurLexResourceImportService,
+    ImportJobRepository,
 )
 from eke.application.resources import (
     ResourceClassificationService,
@@ -26,12 +28,15 @@ from eke.application.resources import (
 from eke.infrastructure.eurlex import (
     HttpxEurLexClient,
     RdfXmlEurLexMetadataParser,
+    SQLAlchemyImportJobRepository,
 )
 from eke.infrastructure.unit_of_work import SQLAlchemyUnitOfWork
 
 
 @dataclass(frozen=True, slots=True)
 class ApplicationContainer:
+    """Hold application factories and external adapters."""
+
     engine: Engine
     session_factory: sessionmaker[Session]
     unit_of_work_factory: Callable[[], UnitOfWork]
@@ -84,6 +89,23 @@ class ApplicationContainer:
             self.eurlex_import_service()
         )
 
+    def import_job_repository(
+        self,
+    ) -> ImportJobRepository:
+        return SQLAlchemyImportJobRepository(
+            self.session_factory
+        )
+
+    def import_job_service(
+        self,
+    ) -> EurLexImportJobService:
+        return EurLexImportJobService(
+            repository=self.import_job_repository(),
+            bulk_import_executor=(
+                self.eurlex_bulk_import_service()
+            ),
+        )
+
 
 def build_container(
     engine: Engine,
@@ -92,10 +114,13 @@ def build_container(
     eurlex_client: EurLexClient | None = None,
     eurlex_metadata_parser: EurLexMetadataParser | None = None,
 ) -> ApplicationContainer:
+    """Build the application dependency container."""
     if not isinstance(engine, Engine):
         raise TypeError("engine must be an Engine")
     if not isinstance(session_factory, sessionmaker):
-        raise TypeError("session_factory must be a sessionmaker")
+        raise TypeError(
+            "session_factory must be a sessionmaker"
+        )
 
     resolved_client = eurlex_client or HttpxEurLexClient()
     resolved_parser = (

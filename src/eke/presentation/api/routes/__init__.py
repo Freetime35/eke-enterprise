@@ -6,6 +6,9 @@ from eke.presentation.api.routes.eurlex_bulk_imports import (
 from eke.presentation.api.routes.eurlex_imports import (
     router as eurlex_imports_router,
 )
+from eke.presentation.api.routes.import_jobs import (
+    router as import_jobs_router,
+)
 from eke.presentation.api.routes.resource_classifications import (
     router as resource_classifications_router,
 )
@@ -31,6 +34,7 @@ from eke.presentation.api.routes.system import (
 __all__ = [
     "eurlex_bulk_imports_router",
     "eurlex_imports_router",
+    "import_jobs_router",
     "resource_classifications_router",
     "resource_provenance_router",
     "resource_relationships_router",

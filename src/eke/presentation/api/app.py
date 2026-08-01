@@ -24,6 +24,7 @@ from eke.presentation.api.openapi import (
 from eke.presentation.api.routes import (
     eurlex_bulk_imports_router,
     eurlex_imports_router,
+    import_jobs_router,
     resource_classifications_router,
     resource_provenance_router,
     resource_relationships_router,
@@ -111,5 +112,6 @@ def create_app(
     app.include_router(resource_classifications_router)
     app.include_router(eurlex_imports_router)
     app.include_router(eurlex_bulk_imports_router)
+    app.include_router(import_jobs_router)
 
     return app

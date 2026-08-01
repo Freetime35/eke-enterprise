@@ -18,6 +18,7 @@ EXPECTED_TAGS = {
     "resource-provenance",
     "resource-classifications",
     "eurlex-imports",
+    "eurlex-import-jobs",
 }
 
 EXPECTED_PATHS = {
@@ -31,7 +32,6 @@ EXPECTED_PATHS = {
     "/resources/{resource_uuid}/versions",
     "/resources/{resource_uuid}/versions/{version_uuid}",
     "/resources/{resource_uuid}/relationships",
-    "/imports/eurlex/bulk",
     (
         "/resources/{resource_uuid}/relationships/"
         "{target_resource_uuid}"
@@ -43,6 +43,10 @@ EXPECTED_PATHS = {
         "{scheme}/{code}/{language}"
     ),
     "/imports/eurlex",
+    "/imports/eurlex/bulk",
+    "/imports/eurlex/jobs",
+    "/imports/eurlex/jobs/{job_uuid}",
+    "/imports/eurlex/jobs/{job_uuid}/run",
 }
 
 
@@ -118,8 +122,10 @@ def test_operation_ids_are_unique_and_stable(
                 operation_ids.append(operation_id)
 
     assert len(operation_ids) == len(set(operation_ids))
+
     assert "resources_create_resource" in operation_ids
     assert "resources_search_resources" in operation_ids
+
     assert (
         "resource_titles_add_resource_title"
         in operation_ids
@@ -140,8 +146,26 @@ def test_operation_ids_are_unique_and_stable(
         "resource_classifications_add_resource_classification"
         in operation_ids
     )
+
     assert (
         "eurlex_imports_import_eurlex_resource"
+        in operation_ids
+    )
+    assert (
+        "eurlex_imports_bulk_import_eurlex_resources"
+        in operation_ids
+    )
+
+    assert (
+        "eurlex_import_jobs_create_import_job"
+        in operation_ids
+    )
+    assert (
+        "eurlex_import_jobs_get_import_job"
+        in operation_ids
+    )
+    assert (
+        "eurlex_import_jobs_run_import_job"
         in operation_ids
     )
 
