@@ -12,6 +12,9 @@ from uuid import UUID
 from eke.application.eurlex.bulk_import import (
     EurLexBulkImportResult,
 )
+from eke.application.eurlex.import_job_lineage import (
+    ImportJobLineage,
+)
 from eke.application.eurlex.import_job_repository import (
     ImportJobRepository,
 )
@@ -41,8 +44,12 @@ class ImportJobStateError(Exception):
     """Raised when an import job cannot transition."""
 
 
+class ImportJobLineageError(Exception):
+    """Raised when persisted retry lineage is invalid."""
+
+
 class EurLexImportJobService:
-    """Create, retrieve, search, execute, cancel, and retry jobs."""
+    """Create, inspect, execute, cancel, and retry jobs."""
 
     def __init__(
         self,
@@ -113,6 +120,37 @@ class EurLexImportJobService:
                 f"import job not found: {job_uuid}"
             )
         return job
+
+    def get_job_lineage(
+        self,
+        job_uuid: UUID,
+    ) -> ImportJobLineage:
+        """Return retry ancestors ordered from root to current."""
+        current = self.get_job(job_uuid)
+        reversed_items = [current]
+        visited = {current.job_uuid}
+
+        while current.retried_from_job_uuid is not None:
+            parent_uuid = current.retried_from_job_uuid
+            if parent_uuid in visited:
+                raise ImportJobLineageError(
+                    "import job retry lineage contains a cycle"
+                )
+
+            parent = self._repository.get(parent_uuid)
+            if parent is None:
+                raise ImportJobLineageError(
+                    "import job retry lineage references "
+                    f"missing job: {parent_uuid}"
+                )
+
+            visited.add(parent_uuid)
+            reversed_items.append(parent)
+            current = parent
+
+        return ImportJobLineage(
+            items=tuple(reversed(reversed_items))
+        )
 
     def search_jobs(
         self,

@@ -16,6 +16,7 @@ from eke.presentation.api.schemas.eurlex_imports import (
 )
 from eke.presentation.api.schemas.import_jobs import (
     ImportJobCreateRequest,
+    ImportJobLineageResponse,
     ImportJobResponse,
     ImportJobSearchResponse,
     ImportJobSubmissionResponse,
@@ -57,6 +58,7 @@ __all__ = [
     "EurLexImportRequest",
     "EurLexImportResponse",
     "ImportJobCreateRequest",
+    "ImportJobLineageResponse",
     "ImportJobResponse",
     "ImportJobSearchResponse",
     "ImportJobSubmissionResponse",

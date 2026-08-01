@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
 from json import loads
 from typing import Annotated, Any
@@ -18,6 +19,7 @@ from fastapi import (
 
 from eke.application.eurlex import (
     EurLexImportJobService,
+    ImportJobLineageError,
     ImportJobNotFoundError,
     ImportJobSearchCriteria,
     ImportJobStateError,
@@ -31,6 +33,7 @@ from eke.presentation.api.dependencies import (
 )
 from eke.presentation.api.schemas import (
     ImportJobCreateRequest,
+    ImportJobLineageResponse,
     ImportJobResponse,
     ImportJobSearchResponse,
     ImportJobSubmissionResponse,
@@ -134,6 +137,34 @@ def get_import_job(
     return _to_response(_get_job(service, job_uuid))
 
 
+@router.get(
+    "/{job_uuid}/lineage",
+    response_model=ImportJobLineageResponse,
+    summary="Get an EUR-Lex import job retry lineage",
+)
+def get_import_job_lineage(
+    job_uuid: UUID,
+    service: ImportJobServiceDependency,
+) -> ImportJobLineageResponse:
+    """Return retry ancestors from origin to current job."""
+    try:
+        lineage = service.get_job_lineage(job_uuid)
+    except ImportJobNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ImportJobLineageError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    return ImportJobLineageResponse(
+        root_job_uuid=lineage.root.job_uuid,
+        current_job_uuid=lineage.current.job_uuid,
+        depth=lineage.depth,
+        items=[
+            _to_response(item)
+            for item in lineage.items
+        ],
+    )
+
+
 @router.post(
     "/{job_uuid}/run",
     response_model=ImportJobResponse,
@@ -160,14 +191,12 @@ def cancel_import_job(
     "/{job_uuid}/retry",
     response_model=ImportJobResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Retry an EUR-Lex import job",
 )
 def retry_import_job(
     job_uuid: UUID,
     service: ImportJobServiceDependency,
     response: Response,
 ) -> ImportJobResponse:
-    """Create a new pending job linked to a terminal job."""
     retried = _transition(service.retry_job, job_uuid)
     response.headers["Location"] = (
         f"/imports/eurlex/jobs/{retried.job_uuid}"
@@ -206,7 +235,7 @@ def submit_import_job(
 
 
 def _transition(
-    transition: Any,
+    transition: Callable[[UUID], ImportJob],
     job_uuid: UUID,
 ) -> ImportJobResponse:
     try:

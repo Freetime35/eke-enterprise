@@ -26,6 +26,9 @@ from eke.application.eurlex.full_resource_mapper import (
     map_relationships,
     map_version,
 )
+from eke.application.eurlex.import_job_lineage import (
+    ImportJobLineage,
+)
 from eke.application.eurlex.import_job_repository import (
     ImportJobRepository,
 )
@@ -36,6 +39,7 @@ from eke.application.eurlex.import_job_search import (
 from eke.application.eurlex.import_job_service import (
     BulkImportExecutor,
     EurLexImportJobService,
+    ImportJobLineageError,
     ImportJobNotFoundError,
     ImportJobStateError,
 )
@@ -80,6 +84,8 @@ __all__ = [
     "EurLexTitle",
     "EurLexUnsupportedMediaTypeError",
     "EurLexUpstreamError",
+    "ImportJobLineage",
+    "ImportJobLineageError",
     "ImportJobNotFoundError",
     "ImportJobRepository",
     "ImportJobSearchCriteria",

@@ -44,6 +44,17 @@ class ImportJobResponse(BaseModel):
     error_detail: str | None
 
 
+class ImportJobLineageResponse(BaseModel):
+    """Represent one retry chain from root to current job."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    root_job_uuid: UUID
+    current_job_uuid: UUID
+    depth: int
+    items: list[ImportJobResponse]
+
+
 class ImportJobSearchResponse(BaseModel):
     """Represent one paginated import-job search result."""
 
