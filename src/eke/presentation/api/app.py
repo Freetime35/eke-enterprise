@@ -13,7 +13,13 @@ from eke.infrastructure.database import (
     upgrade_database,
 )
 from eke.presentation.api.container import build_container
-from eke.presentation.api.routes import system_router
+from eke.presentation.api.errors import (
+    register_exception_handlers,
+)
+from eke.presentation.api.routes import (
+    resources_router,
+    system_router,
+)
 from eke.presentation.api.settings import APISettings
 
 
@@ -27,7 +33,9 @@ def create_app(
         else APISettings.from_environment()
     )
     if not isinstance(resolved_settings, APISettings):
-        raise TypeError("settings must be an APISettings or None")
+        raise TypeError(
+            "settings must be an APISettings or None"
+        )
 
     @asynccontextmanager
     async def lifespan(
@@ -76,6 +84,9 @@ def create_app(
     )
     app.state.settings = resolved_settings
     app.state.ready = False
+
+    register_exception_handlers(app)
     app.include_router(system_router)
+    app.include_router(resources_router)
 
     return app
