@@ -1,50 +1,58 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = [
+    "setuptools>=69",
+    "wheel",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "eke-enterprise"
-version = "0.1.0"
+version = "0.0.1"
 description = "Enterprise platform for canonical legal knowledge engineering."
 readme = "README.md"
-license = { text = "MIT" }
 requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
 
 authors = [
-    { name = "Amine", github = "Freetime35" }
+    { name = "Amine" },
 ]
 
 keywords = [
     "legal",
     "eur-lex",
-    "knowledge-graph",
     "knowledge-engineering",
+    "knowledge-graph",
+    "compliance",
     "regulation",
-    "graph",
     "rdf",
-    "compliance"
+    "graph",
 ]
 
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
-    "Operating System :: OS Independent",
-    "Typing :: Typed"
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
 ]
 
 dependencies = []
 
 [project.optional-dependencies]
-
 dev = [
+    "mypy>=1.18",
     "pytest>=9",
-    "pytest-cov",
-    "ruff",
-    "mypy",
+    "pytest-cov>=7",
+    "ruff>=0.13",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Freetime35/eke-enterprise"
+Repository = "https://github.com/Freetime35/eke-enterprise"
+Issues = "https://github.com/Freetime35/eke-enterprise/issues"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -52,21 +60,22 @@ package-dir = { "" = "src" }
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
+[tool.setuptools.package-data]
+eke = ["py.typed"]
 
-python_files = [
-    "test_*.py"
-]
+[tool.pytest.ini_options]
+minversion = "9.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = ["-ra"]
 
 [tool.ruff]
-
+target-version = "py311"
 line-length = 100
 
-target-version = "py311"
-
 [tool.ruff.lint]
-
 select = [
     "E",
     "F",
@@ -74,13 +83,15 @@ select = [
     "UP",
     "B",
 ]
+ignore = []
+
 
 [tool.mypy]
-
 python_version = "3.11"
-
 strict = true
-
-packages = [
-    "eke"
-]
+mypy_path = "src"
+packages = ["eke"]
+explicit_package_bases = true
+warn_unused_configs = true
+show_error_codes = true
+pretty = true
