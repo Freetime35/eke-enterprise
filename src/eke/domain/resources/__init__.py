@@ -4,10 +4,12 @@ from eke.domain.resources.resource import Resource
 from eke.domain.resources.resource_status import ResourceStatus
 from eke.domain.resources.resource_title import ResourceTitle
 from eke.domain.resources.resource_type import ResourceType
+from eke.domain.resources.resource_version import ResourceVersion
 
 __all__ = [
     "Resource",
     "ResourceStatus",
     "ResourceTitle",
     "ResourceType",
+    "ResourceVersion",
 ]
