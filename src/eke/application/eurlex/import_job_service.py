@@ -42,7 +42,7 @@ class ImportJobStateError(Exception):
 
 
 class EurLexImportJobService:
-    """Create, retrieve, search, execute, and cancel jobs."""
+    """Create, retrieve, search, execute, cancel, and retry jobs."""
 
     def __init__(
         self,
@@ -127,6 +127,27 @@ class EurLexImportJobService:
                 "criteria must be an ImportJobSearchCriteria"
             )
         return self._repository.search(criteria)
+
+    def retry_job(self, job_uuid: UUID) -> ImportJob:
+        """Create a new pending job from a retryable terminal job."""
+        original = self.get_job(job_uuid)
+        if original.status not in {
+            ImportJobStatus.FAILED,
+            ImportJobStatus.PARTIALLY_FAILED,
+            ImportJobStatus.CANCELLED,
+        }:
+            raise ImportJobStateError(
+                "only failed, partially failed, or cancelled "
+                "import jobs can be retried"
+            )
+
+        retried = ImportJob.create(
+            original.celex,
+            created_at=self._now(),
+            retried_from_job_uuid=original.job_uuid,
+        )
+        self._repository.save(retried)
+        return retried
 
     def cancel_job(self, job_uuid: UUID) -> ImportJob:
         """Cancel a pending job before execution starts."""

@@ -30,7 +30,6 @@ from eke.presentation.api.dependencies import (
     get_import_job_worker,
 )
 from eke.presentation.api.schemas import (
-    APIErrorResponse,
     ImportJobCreateRequest,
     ImportJobResponse,
     ImportJobSearchResponse,
@@ -56,7 +55,6 @@ ImportJobWorkerDependency = Annotated[
     "",
     response_model=ImportJobResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create an EUR-Lex import job",
 )
 def create_import_job(
     request: ImportJobCreateRequest,
@@ -73,10 +71,7 @@ def create_import_job(
                 detail={
                     "index": index,
                     "celex": value,
-                    "message": (
-                        "celex must be a valid standard-form "
-                        "CELEX identifier"
-                    ),
+                    "message": "invalid CELEX identifier",
                 },
             ) from exc
 
@@ -90,7 +85,6 @@ def create_import_job(
 @router.get(
     "",
     response_model=ImportJobSearchResponse,
-    summary="Search EUR-Lex import jobs",
 )
 def search_import_jobs(
     service: ImportJobServiceDependency,
@@ -148,40 +142,37 @@ def run_import_job(
     job_uuid: UUID,
     service: ImportJobServiceDependency,
 ) -> ImportJobResponse:
-    try:
-        return _to_response(service.run_job(job_uuid))
-    except ImportJobNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ImportJobStateError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return _transition(service.run_job, job_uuid)
 
 
 @router.post(
     "/{job_uuid}/cancel",
     response_model=ImportJobResponse,
-    responses={
-        status.HTTP_404_NOT_FOUND: {
-            "model": APIErrorResponse,
-            "description": "The import job does not exist.",
-        },
-        status.HTTP_409_CONFLICT: {
-            "model": APIErrorResponse,
-            "description": "The import job cannot be cancelled.",
-        },
-    },
-    summary="Cancel an EUR-Lex import job",
 )
 def cancel_import_job(
     job_uuid: UUID,
     service: ImportJobServiceDependency,
 ) -> ImportJobResponse:
-    """Cancel one pending import job."""
-    try:
-        return _to_response(service.cancel_job(job_uuid))
-    except ImportJobNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ImportJobStateError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return _transition(service.cancel_job, job_uuid)
+
+
+@router.post(
+    "/{job_uuid}/retry",
+    response_model=ImportJobResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Retry an EUR-Lex import job",
+)
+def retry_import_job(
+    job_uuid: UUID,
+    service: ImportJobServiceDependency,
+    response: Response,
+) -> ImportJobResponse:
+    """Create a new pending job linked to a terminal job."""
+    retried = _transition(service.retry_job, job_uuid)
+    response.headers["Location"] = (
+        f"/imports/eurlex/jobs/{retried.job_uuid}"
+    )
+    return retried
 
 
 @router.post(
@@ -200,7 +191,6 @@ def submit_import_job(
             status_code=409,
             detail="only pending import jobs can be submitted",
         )
-
     if not worker.submit(job_uuid):
         raise HTTPException(
             status_code=409,
@@ -213,6 +203,18 @@ def submit_import_job(
         accepted=True,
         location=location,
     )
+
+
+def _transition(
+    transition: Any,
+    job_uuid: UUID,
+) -> ImportJobResponse:
+    try:
+        return _to_response(transition(job_uuid))
+    except ImportJobNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ImportJobStateError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 def _get_job(
@@ -248,6 +250,7 @@ def _to_response(job: ImportJob) -> ImportJobResponse:
         started_at=job.started_at,
         completed_at=job.completed_at,
         cancelled_at=job.cancelled_at,
+        retried_from_job_uuid=job.retried_from_job_uuid,
         results=results,
         error_detail=job.error_detail,
     )

@@ -30,6 +30,7 @@ class ImportJob:
     started_at: datetime | None = None
     completed_at: datetime | None = None
     cancelled_at: datetime | None = None
+    retried_from_job_uuid: UUID | None = None
     total: int = 0
     created: int = 0
     existing: int = 0
@@ -56,6 +57,20 @@ class ImportJob:
         if not isinstance(self.status, ImportJobStatus):
             raise TypeError(
                 "status must be an ImportJobStatus"
+            )
+        if (
+            self.retried_from_job_uuid is not None
+            and not isinstance(
+                self.retried_from_job_uuid,
+                UUID,
+            )
+        ):
+            raise TypeError(
+                "retried_from_job_uuid must be a UUID or None"
+            )
+        if self.retried_from_job_uuid == self.job_uuid:
+            raise ValueError(
+                "a job cannot retry itself"
             )
 
         self._validate_datetime(
@@ -121,6 +136,7 @@ class ImportJob:
         celex: tuple[str, ...],
         *,
         created_at: datetime,
+        retried_from_job_uuid: UUID | None = None,
     ) -> ImportJob:
         """Create a new pending import job."""
         return cls(
@@ -128,6 +144,7 @@ class ImportJob:
             celex=celex,
             status=ImportJobStatus.PENDING,
             created_at=created_at,
+            retried_from_job_uuid=retried_from_job_uuid,
             total=len(celex),
         )
 

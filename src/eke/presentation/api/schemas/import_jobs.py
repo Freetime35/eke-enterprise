@@ -39,6 +39,7 @@ class ImportJobResponse(BaseModel):
     started_at: datetime | None
     completed_at: datetime | None
     cancelled_at: datetime | None
+    retried_from_job_uuid: UUID | None
     results: list[dict[str, Any]] | None
     error_detail: str | None
 

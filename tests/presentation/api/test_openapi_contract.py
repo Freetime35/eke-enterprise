@@ -49,6 +49,7 @@ EXPECTED_PATHS = {
     "/imports/eurlex/jobs/{job_uuid}/run",
     "/imports/eurlex/jobs/{job_uuid}/submit",
     "/imports/eurlex/jobs/{job_uuid}/cancel",
+    "/imports/eurlex/jobs/{job_uuid}/retry",
 }
 
 
@@ -180,6 +181,10 @@ def test_operation_ids_are_unique_and_stable(
     )
     assert (
         "eurlex_import_jobs_cancel_import_job"
+        in operation_ids
+    )
+    assert (
+        "eurlex_import_jobs_retry_import_job"
         in operation_ids
     )
 

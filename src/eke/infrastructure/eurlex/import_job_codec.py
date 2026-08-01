@@ -38,6 +38,11 @@ def encode_import_job(job: ImportJob) -> str:
                 if job.cancelled_at is not None
                 else None
             ),
+            "retried_from_job_uuid": (
+                str(job.retried_from_job_uuid)
+                if job.retried_from_job_uuid is not None
+                else None
+            ),
             "total": job.total,
             "created": job.created,
             "existing": job.existing,
@@ -56,6 +61,8 @@ def decode_import_job(payload: str) -> ImportJob:
         raise TypeError("payload must be a string")
     raw: dict[str, Any] = loads(payload)
 
+    retried_from = raw.get("retried_from_job_uuid")
+
     return ImportJob(
         job_uuid=UUID(raw["job_uuid"]),
         celex=tuple(raw["celex"]),
@@ -69,6 +76,11 @@ def decode_import_job(payload: str) -> ImportJob:
         ),
         cancelled_at=_parse_datetime(
             raw.get("cancelled_at")
+        ),
+        retried_from_job_uuid=(
+            UUID(retried_from)
+            if retried_from is not None
+            else None
         ),
         total=raw["total"],
         created=raw["created"],
