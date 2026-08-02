@@ -133,6 +133,16 @@ from eke.application.eurlex.legal_bases import (
     legal_basis_kind_from_predicate,
     normalize_legal_bases,
 )
+from eke.application.eurlex.legal_consequence_extractor import (
+    EurLexLegalConsequenceExtractor,
+)
+from eke.application.eurlex.legal_consequences import (
+    EurLexLegalConsequence,
+    EurLexLegalConsequenceKind,
+    EurLexLegalConsequenceModality,
+    EurLexLegalConsequences,
+    normalize_legal_consequences,
+)
 from eke.application.eurlex.legal_definitions import (
     EurLexLegalDefinition,
     EurLexLegalDefinitions,
@@ -245,6 +255,12 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "normalize_legal_consequences",
+    "EurLexLegalConsequences",
+    "EurLexLegalConsequenceModality",
+    "EurLexLegalConsequenceKind",
+    "EurLexLegalConsequenceExtractor",
+    "EurLexLegalConsequence",
     "normalize_quantitative_thresholds",
     "EurLexQuantitativeUnitKind",
     "EurLexQuantitativeThresholds",
