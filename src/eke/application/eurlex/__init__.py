@@ -106,6 +106,15 @@ from eke.application.eurlex.internal_references import (
     EurLexInternalReferences,
     normalize_internal_references,
 )
+from eke.application.eurlex.legal_actor_extractor import (
+    EurLexLegalActorExtractor,
+)
+from eke.application.eurlex.legal_actors import (
+    EurLexLegalActor,
+    EurLexLegalActorKind,
+    EurLexLegalActorMention,
+    EurLexLegalActors,
+)
 from eke.application.eurlex.legal_bases import (
     EurLexLegalBasis,
     EurLexLegalBasisKind,
@@ -194,6 +203,11 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "EurLexLegalActors",
+    "EurLexLegalActorMention",
+    "EurLexLegalActorKind",
+    "EurLexLegalActorExtractor",
+    "EurLexLegalActor",
     "EurLexComplianceRules",
     "EurLexComplianceRuleKind",
     "EurLexComplianceRuleExtractor",
