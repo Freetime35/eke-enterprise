@@ -16,6 +16,14 @@ from eke.application.eurlex.complex_document_content import (
     EurLexVisualElement,
     EurLexVisualKind,
 )
+from eke.application.eurlex.compliance_rule_extractor import (
+    EurLexComplianceRuleExtractor,
+)
+from eke.application.eurlex.compliance_rules import (
+    EurLexComplianceRule,
+    EurLexComplianceRuleKind,
+    EurLexComplianceRules,
+)
 from eke.application.eurlex.corrigenda import (
     EurLexCorrigendum,
     EurLexCorrigendumIdentifier,
@@ -186,6 +194,10 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "EurLexComplianceRules",
+    "EurLexComplianceRuleKind",
+    "EurLexComplianceRuleExtractor",
+    "EurLexComplianceRule",
     "EurLexRequirementsGraphBuilder",
     "EurLexRequirementsGraph",
     "EurLexRequirementNode",
