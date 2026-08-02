@@ -21,6 +21,10 @@ from eke.application.eurlex.exceptions import (
     EurLexUnsupportedMediaTypeError,
     EurLexUpstreamError,
 )
+from eke.application.eurlex.financial_classification import (
+    FinancialClassificationCategory,
+    classify_financial_label,
+)
 from eke.application.eurlex.full_resource_mapper import (
     map_classifications,
     map_relationships,
@@ -80,6 +84,8 @@ from eke.application.eurlex.resource_mapper import (
 )
 
 __all__ = [
+    "classify_financial_label",
+    "FinancialClassificationCategory",
     "relationship_type_from_predicate",
     "BulkImportExecutor",
     "EurLexBulkImportItem",

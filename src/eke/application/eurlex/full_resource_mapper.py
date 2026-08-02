@@ -39,15 +39,27 @@ def map_version(
 def map_classifications(
     metadata: EurLexMetadata,
 ) -> tuple[ClassificationConcept, ...]:
-    """Map labeled EuroVoc metadata to domain concepts."""
-    return tuple(
-        ClassificationConcept(
+    """Map unique English financial EuroVoc concepts."""
+    concepts: list[ClassificationConcept] = []
+
+    for item in metadata.classifications:
+        if item.language.value != "en":
+            continue
+        if item.financial_category is None:
+            continue
+
+        concept = ClassificationConcept(
             scheme=ClassificationScheme.EUROVOC,
             code=item.code,
-            label=LocalizedText(item.language, item.label),
+            label=LocalizedText(
+                item.language,
+                item.label,
+            ),
         )
-        for item in metadata.classifications
-    )
+        if concept not in concepts:
+            concepts.append(concept)
+
+    return tuple(concepts)
 
 
 def map_relationships(

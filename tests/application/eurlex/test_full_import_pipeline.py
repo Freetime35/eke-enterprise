@@ -9,6 +9,7 @@ from eke.application.eurlex import (
     EurLexRelationship,
     EurLexResourceImportService,
     EurLexTitle,
+    FinancialClassificationCategory,
 )
 from eke.domain.identity import (
     CelexIdentifier,
@@ -69,6 +70,10 @@ class Parser:
                     code="1001",
                     language=LanguageCode("en"),
                     label="financial market",
+                    financial_category=(
+                        FinancialClassificationCategory
+                        .CAPITAL_MARKETS
+                    ),
                 ),
             ),
             relationships=(
@@ -121,6 +126,11 @@ def test_full_import_enriches_owned_aggregate_values() -> None:
         relationship.relationship_type
         is RelationshipType.AMENDS
     )
+
+    classification = result.resource.classifications[0]
+    assert classification.code == "1001"
+    assert classification.label.value == "financial market"
+    assert classification.label.language == LanguageCode("en")
 
     persisted_target = repository.get_by_identifier(
         target_celex.to_business_identifier()

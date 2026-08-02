@@ -9,33 +9,48 @@ from eke.application.eurlex import (
     EurLexClassification,
     EurLexDocument,
     EurLexMetadata,
-    EurLexRelationship,
 )
-from eke.domain.identity import CelexIdentifier
+from eke.application.eurlex.financial_classification import (
+    classify_financial_label,
+)
 from eke.domain.localization import LanguageCode
-from eke.domain.relationships import RelationshipType
 from eke.infrastructure.eurlex.rdf_xml_parser import (
     RdfXmlEurLexMetadataParser as BaseParser,
 )
 
+_RDF_ABOUT = (
+    "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}about"
+)
 _RDF_RESOURCE = (
     "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}resource"
 )
 _XML_LANG = "{http://www.w3.org/XML/1998/namespace}lang"
 
-_RELATIONSHIP_NAMES = {
-    "work_amends_work": RelationshipType.AMENDS,
-    "work_repeals_work": RelationshipType.REPEALS,
-    "work_cites_work": RelationshipType.CITES,
-    "work_implements_work": RelationshipType.IMPLEMENTS,
-    "work_has_legal_basis_work": RelationshipType.LEGAL_BASIS,
-    "work_corrects_work": RelationshipType.CORRECTS,
-    "work_related_to_work": RelationshipType.RELATED_TO,
-}
+_LABEL_NAMES = frozenset(
+    {
+        "prefLabel",
+        "label",
+        "concept_label",
+    }
+)
+_BROADER_NAMES = frozenset({"broader"})
+_NARROWER_NAMES = frozenset({"narrower"})
+_SCHEME_NAMES = frozenset(
+    {
+        "inScheme",
+        "topConceptOf",
+    }
+)
+_SUBJECT_NAMES = frozenset(
+    {
+        "work_is_about_concept_eurovoc",
+        "subject",
+    }
+)
 
 
 class FullRdfXmlEurLexMetadataParser(BaseParser):
-    """Parse base metadata plus labeled EuroVoc and CELEX relations."""
+    """Parse base metadata plus English financial classifications."""
 
     def parse(
         self,
@@ -43,111 +58,151 @@ class FullRdfXmlEurLexMetadataParser(BaseParser):
     ) -> EurLexMetadata:
         metadata = super().parse(document)
         root = ElementTree.fromstring(document.content)
+
         return replace(
             metadata,
             classifications=_parse_classifications(root),
-            relationships=_parse_relationships(root),
         )
 
 
 def _parse_classifications(
     root: ElementTree.Element,
 ) -> tuple[EurLexClassification, ...]:
-    labels: dict[str, list[tuple[LanguageCode, str]]] = {}
-
-    for element in root.iter():
-        local = _local_name(element.tag)
-        if local not in {
-            "prefLabel",
-            "label",
-            "concept_label",
-        }:
-            continue
-        subject = _nearest_subject_uri(root, element)
-        raw_language = element.attrib.get(_XML_LANG)
-        language = _language(raw_language)
-        value = _text(element)
-        if (
-            subject is not None
-            and language is not None
-            and value is not None
-        ):
-            labels.setdefault(subject, []).append(
-                (language, value)
-            )
-
-    concept_uris: list[str] = []
-    for element in root.iter():
-        if _local_name(element.tag) not in {
-            "work_is_about_concept_eurovoc",
-            "subject",
-        }:
-            continue
-        uri = element.attrib.get(_RDF_RESOURCE)
-        if (
-            uri
-            and "eurovoc" in uri.casefold()
-            and uri not in concept_uris
-        ):
-            concept_uris.append(uri)
-
+    descriptions = _description_index(root)
+    concept_uris = _subject_concept_uris(root)
     results: list[EurLexClassification] = []
+    seen: set[tuple[str, str]] = set()
+
     for uri in concept_uris:
-        code = uri.rstrip("/").rsplit("/", maxsplit=1)[-1]
-        for language, label in labels.get(uri, []):
-            results.append(
-                EurLexClassification(
-                    uri=uri,
-                    code=code,
-                    language=language,
-                    label=label,
-                )
+        description = descriptions.get(uri)
+        if description is None:
+            continue
+
+        label = _english_label(description)
+        if label is None:
+            continue
+
+        category = classify_financial_label(label)
+        if category is None:
+            continue
+
+        language = LanguageCode("en")
+        identity = (uri, language.value)
+        if identity in seen:
+            continue
+        seen.add(identity)
+
+        results.append(
+            EurLexClassification(
+                uri=uri,
+                code=uri.rstrip("/").rsplit(
+                    "/",
+                    maxsplit=1,
+                )[-1],
+                language=language,
+                label=label,
+                scheme_uri=_first_resource(
+                    description,
+                    _SCHEME_NAMES,
+                ),
+                broader_uris=_resources(
+                    description,
+                    _BROADER_NAMES,
+                ),
+                narrower_uris=_resources(
+                    description,
+                    _NARROWER_NAMES,
+                ),
+                financial_category=category,
             )
+        )
+
     return tuple(results)
 
 
-def _parse_relationships(
+def _description_index(
     root: ElementTree.Element,
-) -> tuple[EurLexRelationship, ...]:
-    relationships: list[EurLexRelationship] = []
+) -> dict[str, ElementTree.Element]:
+    result: dict[str, ElementTree.Element] = {}
 
     for element in root.iter():
-        relationship_type = _RELATIONSHIP_NAMES.get(
-            _local_name(element.tag)
-        )
-        if relationship_type is None:
-            continue
-        raw_target = element.attrib.get(_RDF_RESOURCE)
-        if raw_target is None:
-            continue
-        celex_value = raw_target.rstrip("/").rsplit("/", maxsplit=1)[-1]
-        try:
-            target = CelexIdentifier.parse(celex_value)
-        except (TypeError, ValueError):
-            continue
-        relationship = EurLexRelationship(
-            target_celex=target,
-            relationship_type=relationship_type,
-        )
-        if relationship not in relationships:
-            relationships.append(relationship)
-
-    return tuple(relationships)
-
-
-def _nearest_subject_uri(
-    root: ElementTree.Element,
-    target: ElementTree.Element,
-) -> str | None:
-    for description in root.iter():
-        if target not in tuple(description.iter()):
-            continue
-        uri = description.attrib.get(
-            "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}about"
-        )
+        uri = element.attrib.get(_RDF_ABOUT)
         if uri:
-            return uri
+            result[uri.strip()] = element
+
+    return result
+
+
+def _subject_concept_uris(
+    root: ElementTree.Element,
+) -> tuple[str, ...]:
+    results: list[str] = []
+
+    for element in root.iter():
+        if _local_name(element.tag) not in _SUBJECT_NAMES:
+            continue
+
+        uri = element.attrib.get(_RDF_RESOURCE)
+        if (
+            uri is not None
+            and "eurovoc" in uri.casefold()
+            and uri not in results
+        ):
+            results.append(uri)
+
+    return tuple(results)
+
+
+def _english_label(
+    description: ElementTree.Element,
+) -> str | None:
+    for element in description.iter():
+        if _local_name(element.tag) not in _LABEL_NAMES:
+            continue
+
+        raw_language = element.attrib.get(_XML_LANG)
+        if raw_language is None:
+            continue
+
+        language = raw_language.split(
+            "-",
+            maxsplit=1,
+        )[0].casefold()
+        if language not in {"en", "eng"}:
+            continue
+
+        value = _text(element)
+        if value is not None:
+            return value
+
     return None
+
+
+def _first_resource(
+    description: ElementTree.Element,
+    names: frozenset[str],
+) -> str | None:
+    values = _resources(description, names)
+    return values[0] if values else None
+
+
+def _resources(
+    description: ElementTree.Element,
+    names: frozenset[str],
+) -> tuple[str, ...]:
+    results: list[str] = []
+
+    for element in description.iter():
+        if _local_name(element.tag) not in names:
+            continue
+
+        uri = element.attrib.get(_RDF_RESOURCE)
+        if uri is not None:
+            normalized = uri.strip()
+            if normalized and normalized not in results:
+                results.append(normalized)
+
+    return tuple(results)
 
 
 def _local_name(tag: str) -> str:
@@ -157,17 +212,6 @@ def _local_name(tag: str) -> str:
 def _text(element: ElementTree.Element) -> str | None:
     if element.text is None:
         return None
+
     value = " ".join(element.text.split())
     return value or None
-
-
-def _language(value: str | None) -> LanguageCode | None:
-    if value is None:
-        return None
-    token = value.split("-", maxsplit=1)[0]
-    if len(token) != 2:
-        return None
-    try:
-        return LanguageCode(token)
-    except (TypeError, ValueError):
-        return None
