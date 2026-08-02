@@ -156,6 +156,18 @@ from eke.application.eurlex.regulatory_families import (
 from eke.application.eurlex.relationship_mapper import (
     relationship_type_from_predicate,
 )
+from eke.application.eurlex.requirements_graph import (
+    EurLexDefinitionNode,
+    EurLexRequirementDocumentNode,
+    EurLexRequirementEdge,
+    EurLexRequirementEdgeKind,
+    EurLexRequirementKind,
+    EurLexRequirementNode,
+    EurLexRequirementsGraph,
+)
+from eke.application.eurlex.requirements_graph_builder import (
+    EurLexRequirementsGraphBuilder,
+)
 from eke.application.eurlex.resource_mapper import (
     map_resource_status,
     map_resource_type,
@@ -174,6 +186,14 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "EurLexRequirementsGraphBuilder",
+    "EurLexRequirementsGraph",
+    "EurLexRequirementNode",
+    "EurLexRequirementKind",
+    "EurLexRequirementEdgeKind",
+    "EurLexRequirementEdge",
+    "EurLexRequirementDocumentNode",
+    "EurLexDefinitionNode",
     "normalize_internal_references",
     "EurLexInternalReferences",
     "EurLexInternalReferenceKind",
