@@ -1,5 +1,9 @@
 """EUR-Lex infrastructure adapters."""
 
+from eke.infrastructure.eurlex.complex_document_content_parser import (
+    EurLexComplexDocumentContentParseError,
+    XmlEurLexComplexContentParser,
+)
 from eke.infrastructure.eurlex.document_structure_parser import (
     EurLexDocumentStructureParseError,
     XmlEurLexDocumentStructureParser,
@@ -23,6 +27,8 @@ RdfXmlEurLexMetadataParser = (
 )
 
 __all__ = [
+    "XmlEurLexComplexContentParser",
+    "EurLexComplexDocumentContentParseError",
     "DEFAULT_CELEX_BASE_URL",
     "EurLexDocumentStructureParseError",
     "FullRdfXmlEurLexMetadataParser",

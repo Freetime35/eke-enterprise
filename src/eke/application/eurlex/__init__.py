@@ -7,6 +7,15 @@ from eke.application.eurlex.bulk_import import (
     EurLexBulkImportStatus,
 )
 from eke.application.eurlex.client import EurLexClient
+from eke.application.eurlex.complex_document_content import (
+    EurLexComplexDocumentContent,
+    EurLexFootnote,
+    EurLexFormula,
+    EurLexTable,
+    EurLexTableCell,
+    EurLexVisualElement,
+    EurLexVisualKind,
+)
 from eke.application.eurlex.corrigenda import (
     EurLexCorrigendum,
     EurLexCorrigendumIdentifier,
@@ -136,6 +145,13 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "EurLexVisualKind",
+    "EurLexVisualElement",
+    "EurLexTableCell",
+    "EurLexTable",
+    "EurLexFormula",
+    "EurLexFootnote",
+    "EurLexComplexDocumentContent",
     "EurLexDocumentStructure",
     "EurLexDocumentNodeKind",
     "EurLexDocumentNode",
