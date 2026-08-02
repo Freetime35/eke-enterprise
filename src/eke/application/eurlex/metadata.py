@@ -12,6 +12,10 @@ from eke.application.eurlex.enrichment import (
 from eke.application.eurlex.institutional_provenance import (
     EurLexInstitution,
 )
+from eke.application.eurlex.legal_lifecycle import (
+    EurLexAmendmentEvent,
+    EurLexLegalLifecycleEvent,
+)
 from eke.application.eurlex.regulatory_families import (
     EurLexRegulatoryFamilyMatch,
 )
@@ -126,6 +130,14 @@ class EurLexMetadata:
     eurovoc_concept_uris: tuple[str, ...] = ()
     classifications: tuple[EurLexClassification, ...] = ()
     relationships: tuple[EurLexRelationship, ...] = ()
+    legal_lifecycle: tuple[
+        EurLexLegalLifecycleEvent,
+        ...,
+    ] = ()
+    amendment_events: tuple[
+        EurLexAmendmentEvent,
+        ...,
+    ] = ()
     regulatory_families: tuple[
         EurLexRegulatoryFamilyMatch,
         ...,
@@ -209,6 +221,30 @@ class EurLexMetadata:
             raise TypeError(
                 "regulatory_families must contain "
                 "EurLexRegulatoryFamilyMatch values"
+            )
+
+        if any(
+            not isinstance(
+                event,
+                EurLexLegalLifecycleEvent,
+            )
+            for event in self.legal_lifecycle
+        ):
+            raise TypeError(
+                "legal_lifecycle must contain "
+                "EurLexLegalLifecycleEvent values"
+            )
+
+        if any(
+            not isinstance(
+                event,
+                EurLexAmendmentEvent,
+            )
+            for event in self.amendment_events
+        ):
+            raise TypeError(
+                "amendment_events must contain "
+                "EurLexAmendmentEvent values"
             )
 
         if any(

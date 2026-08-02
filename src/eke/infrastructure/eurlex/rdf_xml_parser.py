@@ -19,6 +19,13 @@ from eke.application.eurlex import (
 from eke.application.eurlex.institutional_provenance import (
     normalize_institutions,
 )
+from eke.application.eurlex.legal_lifecycle import (
+    EurLexAmendmentEvent,
+    EurLexLegalLifecycleEvent,
+    EurLexLegalLifecycleEventKind,
+    normalize_amendment_events,
+    normalize_lifecycle_events,
+)
 from eke.application.eurlex.regulatory_families import (
     detect_regulatory_families,
 )
@@ -97,6 +104,68 @@ _END_OF_VALIDITY_NAMES = frozenset(
         "date_end_of_validity",
     }
 )
+
+_LIFECYCLE_PREDICATES: dict[
+    str,
+    EurLexLegalLifecycleEventKind,
+] = {
+    "work_date_document": EurLexLegalLifecycleEventKind.DOCUMENT,
+    "date_document": EurLexLegalLifecycleEventKind.DOCUMENT,
+    "work_date_adoption": EurLexLegalLifecycleEventKind.ADOPTION,
+    "date_adoption": EurLexLegalLifecycleEventKind.ADOPTION,
+    "work_date_signature": EurLexLegalLifecycleEventKind.SIGNATURE,
+    "date_signature": EurLexLegalLifecycleEventKind.SIGNATURE,
+    "work_date_notification": EurLexLegalLifecycleEventKind.NOTIFICATION,
+    "date_notification": EurLexLegalLifecycleEventKind.NOTIFICATION,
+    "work_date_publication": EurLexLegalLifecycleEventKind.PUBLICATION,
+    "date_publication": EurLexLegalLifecycleEventKind.PUBLICATION,
+    "work_date_entry-into-force": EurLexLegalLifecycleEventKind.ENTRY_INTO_FORCE,
+    "date_entry-into-force": EurLexLegalLifecycleEventKind.ENTRY_INTO_FORCE,
+    "date_entry_into_force": EurLexLegalLifecycleEventKind.ENTRY_INTO_FORCE,
+    "work_date_taking-effect": EurLexLegalLifecycleEventKind.TAKING_EFFECT,
+    "date_taking-effect": EurLexLegalLifecycleEventKind.TAKING_EFFECT,
+    "date_taking_effect": EurLexLegalLifecycleEventKind.TAKING_EFFECT,
+    "work_date_application": EurLexLegalLifecycleEventKind.APPLICATION,
+    "date_application": EurLexLegalLifecycleEventKind.APPLICATION,
+    "work_date_transposition": EurLexLegalLifecycleEventKind.TRANSPOSITION_DEADLINE,
+    "date_transposition": EurLexLegalLifecycleEventKind.TRANSPOSITION_DEADLINE,
+    "transposition_deadline": EurLexLegalLifecycleEventKind.TRANSPOSITION_DEADLINE,
+    "work_date_end-of-validity": EurLexLegalLifecycleEventKind.END_OF_VALIDITY,
+    "date_end-of-validity": EurLexLegalLifecycleEventKind.END_OF_VALIDITY,
+    "date_end_of_validity": EurLexLegalLifecycleEventKind.END_OF_VALIDITY,
+    "work_date_repeal": EurLexLegalLifecycleEventKind.REPEAL,
+    "date_repeal": EurLexLegalLifecycleEventKind.REPEAL,
+    "work_date_withdrawal": EurLexLegalLifecycleEventKind.WITHDRAWAL,
+    "date_withdrawal": EurLexLegalLifecycleEventKind.WITHDRAWAL,
+}
+
+_AMENDMENT_EVENT_NAMES = frozenset(
+    {
+        "amendment_event",
+        "legal_amendment_event",
+        "resource_legal_amendment_event",
+    }
+)
+_AMENDING_CELEX_NAMES = frozenset(
+    {
+        "amending_celex",
+        "amending_act_celex",
+    }
+)
+_AMENDED_CELEX_NAMES = frozenset(
+    {
+        "amended_celex",
+        "amended_act_celex",
+    }
+)
+_AMENDMENT_EFFECTIVE_DATE_NAMES = frozenset(
+    {
+        "effective_on",
+        "date_effect",
+        "date_effective",
+    }
+)
+
 _LANGUAGE_NAMES = frozenset(
     {
         "expression_uses_language",
@@ -262,6 +331,12 @@ class RdfXmlEurLexMetadataParser:
             relationships=self._parse_relationships(
                 root
             ),
+            legal_lifecycle=(
+                self._parse_legal_lifecycle(root)
+            ),
+            amendment_events=(
+                self._parse_amendment_events(root)
+            ),
             regulatory_families=detect_regulatory_families(
                 parsed_celex or document.celex_identifier,
                 titles,
@@ -376,6 +451,90 @@ class RdfXmlEurLexMetadataParser:
                 relationships.append(relationship)
 
         return tuple(relationships)
+
+    @staticmethod
+    def _parse_legal_lifecycle(
+        root: ElementTree.Element,
+    ) -> tuple[EurLexLegalLifecycleEvent, ...]:
+        events: list[EurLexLegalLifecycleEvent] = []
+
+        for element in root.iter():
+            predicate = _local_name(element.tag)
+            kind = _LIFECYCLE_PREDICATES.get(
+                predicate
+            )
+            if kind is None:
+                continue
+
+            value = _text_value(element)
+            if value is None:
+                continue
+
+            try:
+                occurred_on = date.fromisoformat(
+                    value[:10]
+                )
+            except ValueError as exc:
+                raise EurLexMalformedMetadataError(
+                    "metadata contains an invalid "
+                    "lifecycle date"
+                ) from exc
+
+            events.append(
+                EurLexLegalLifecycleEvent(
+                    kind=kind,
+                    occurred_on=occurred_on,
+                    source_predicate=predicate,
+                )
+            )
+
+        return normalize_lifecycle_events(
+            tuple(events)
+        )
+
+    @staticmethod
+    def _parse_amendment_events(
+        root: ElementTree.Element,
+    ) -> tuple[EurLexAmendmentEvent, ...]:
+        events: list[EurLexAmendmentEvent] = []
+
+        for element in root.iter():
+            predicate = _local_name(element.tag)
+            if predicate not in _AMENDMENT_EVENT_NAMES:
+                continue
+
+            amending = _first_nested_celex(
+                element,
+                _AMENDING_CELEX_NAMES,
+            )
+            amended = _first_nested_celex(
+                element,
+                _AMENDED_CELEX_NAMES,
+            )
+            effective_on = _first_nested_date(
+                element,
+                _AMENDMENT_EFFECTIVE_DATE_NAMES,
+            )
+
+            if (
+                amending is None
+                or amended is None
+                or effective_on is None
+            ):
+                continue
+
+            events.append(
+                EurLexAmendmentEvent(
+                    amending_celex=amending,
+                    amended_celex=amended,
+                    effective_on=effective_on,
+                    source_predicate=predicate,
+                )
+            )
+
+        return normalize_amendment_events(
+            tuple(events)
+        )
 
     @staticmethod
     def _parse_first_date(
@@ -553,6 +712,44 @@ def _parse_celex_reference(
     except (TypeError, ValueError):
         return None
 
+
+
+def _first_nested_celex(
+    root: ElementTree.Element,
+    names: frozenset[str],
+) -> CelexIdentifier | None:
+    for element in root.iter():
+        if _local_name(element.tag) not in names:
+            continue
+        parsed = _parse_celex_reference(
+            _element_value(element)
+        )
+        if parsed is not None:
+            return parsed
+
+    return None
+
+
+def _first_nested_date(
+    root: ElementTree.Element,
+    names: frozenset[str],
+) -> date | None:
+    for element in root.iter():
+        if _local_name(element.tag) not in names:
+            continue
+
+        value = _text_value(element)
+        if value is None:
+            continue
+
+        try:
+            return date.fromisoformat(value[:10])
+        except ValueError as exc:
+            raise EurLexMalformedMetadataError(
+                "metadata contains an invalid amendment date"
+            ) from exc
+
+    return None
 
 def _parse_language(
     raw_value: str | None,

@@ -73,6 +73,13 @@ from eke.application.eurlex.institutional_provenance import (
     institution_from_uri,
     normalize_institutions,
 )
+from eke.application.eurlex.legal_lifecycle import (
+    EurLexAmendmentEvent,
+    EurLexLegalLifecycleEvent,
+    EurLexLegalLifecycleEventKind,
+    normalize_amendment_events,
+    normalize_lifecycle_events,
+)
 from eke.application.eurlex.metadata import (
     EurLexMetadata,
     EurLexMetadataCompleteness,
@@ -100,6 +107,11 @@ from eke.application.eurlex.titles import (
 )
 
 __all__ = [
+    "normalize_lifecycle_events",
+    "normalize_amendment_events",
+    "EurLexLegalLifecycleEventKind",
+    "EurLexLegalLifecycleEvent",
+    "EurLexAmendmentEvent",
     "detect_regulatory_families",
     "RegulatoryFamilyEvidenceKind",
     "EurLexRegulatoryFamilyMatch",
