@@ -1,5 +1,9 @@
 """EUR-Lex infrastructure adapters."""
 
+from eke.infrastructure.eurlex.document_structure_parser import (
+    EurLexDocumentStructureParseError,
+    XmlEurLexDocumentStructureParser,
+)
 from eke.infrastructure.eurlex.full_rdf_xml_parser import (
     FullRdfXmlEurLexMetadataParser,
 )
@@ -20,9 +24,11 @@ RdfXmlEurLexMetadataParser = (
 
 __all__ = [
     "DEFAULT_CELEX_BASE_URL",
+    "EurLexDocumentStructureParseError",
     "FullRdfXmlEurLexMetadataParser",
     "HttpxEurLexClient",
     "RdfXmlEurLexMetadataParser",
     "SQLAlchemyImportJobRepository",
     "ThreadedImportJobWorker",
+    "XmlEurLexDocumentStructureParser",
 ]

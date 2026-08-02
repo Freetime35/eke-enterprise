@@ -13,6 +13,11 @@ from eke.application.eurlex.corrigenda import (
     normalize_corrigenda,
 )
 from eke.application.eurlex.document import EurLexDocument
+from eke.application.eurlex.document_structure import (
+    EurLexDocumentNode,
+    EurLexDocumentNodeKind,
+    EurLexDocumentStructure,
+)
 from eke.application.eurlex.enrichment import (
     EurLexClassification,
     EurLexRelationship,
@@ -131,6 +136,9 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "EurLexDocumentStructure",
+    "EurLexDocumentNodeKind",
+    "EurLexDocumentNode",
     "normalize_legal_bases",
     "legal_basis_kind_from_predicate",
     "EurLexLegalBasisKind",
