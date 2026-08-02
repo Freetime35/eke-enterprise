@@ -11,6 +11,7 @@ from eke.application.eurlex import (
     EurLexMetadata,
     EurLexMetadataMismatchError,
     EurLexMetadataParser,
+    EurLexOfficialJournalReference,
     EurLexTitle,
     EurLexUnsupportedMediaTypeError,
 )
@@ -98,6 +99,53 @@ _EUROVOC_NAMES = frozenset(
     }
 )
 
+_ELI_NAMES = frozenset(
+    {
+        "resource_legal_eli",
+        "work_eli",
+        "eli",
+    }
+)
+_OFFICIAL_JOURNAL_NAMES = frozenset(
+    {
+        "work_is_published_in_official-journal",
+        "published_in_official_journal",
+        "official_journal",
+    }
+)
+_OFFICIAL_JOURNAL_NUMBER_NAMES = frozenset(
+    {
+        "official-journal_number",
+        "official_journal_number",
+        "oj_number",
+    }
+)
+_OFFICIAL_JOURNAL_PAGE_FIRST_NAMES = frozenset(
+    {
+        "official-journal_page_first",
+        "official_journal_page_first",
+        "page_first",
+    }
+)
+_OFFICIAL_JOURNAL_PAGE_LAST_NAMES = frozenset(
+    {
+        "official-journal_page_last",
+        "official_journal_page_last",
+        "page_last",
+    }
+)
+_RESPONSIBLE_AGENT_NAMES = frozenset(
+    {
+        "work_created_by_agent",
+        "work_adopted_by_agent",
+        "created_by",
+        "creator",
+    }
+)
+_RDF_ABOUT_ATTRIBUTE = (
+    "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}about"
+)
+
 
 class RdfXmlEurLexMetadataParser:
     """Extract stable metadata from a Cellar RDF/XML notice."""
@@ -167,6 +215,18 @@ class RdfXmlEurLexMetadataParser:
             status_uri=self._parse_first_resource(
                 root,
                 _STATUS_NAMES,
+            ),
+            eli_uri=self._parse_first_resource(
+                root,
+                _ELI_NAMES,
+            ),
+            cellar_uri=self._parse_cellar_uri(root),
+            official_journal=self._parse_official_journal(
+                root
+            ),
+            responsible_agent_uris=self._parse_resources(
+                root,
+                _RESPONSIBLE_AGENT_NAMES,
             ),
             eurovoc_concept_uris=self._parse_resources(
                 root,
@@ -260,6 +320,88 @@ class RdfXmlEurLexMetadataParser:
         return None
 
     @staticmethod
+    def _parse_cellar_uri(
+        root: ElementTree.Element,
+    ) -> str | None:
+        for element in root.iter():
+            value = element.attrib.get(
+                _RDF_ABOUT_ATTRIBUTE
+            )
+            if (
+                value is not None
+                and "/cellar/" in value.casefold()
+            ):
+                return value.strip() or None
+
+        return None
+
+    @staticmethod
+    def _parse_official_journal(
+        root: ElementTree.Element,
+    ) -> EurLexOfficialJournalReference | None:
+        uri = (
+            RdfXmlEurLexMetadataParser
+            ._parse_first_resource(
+                root,
+                _OFFICIAL_JOURNAL_NAMES,
+            )
+        )
+        number = (
+            RdfXmlEurLexMetadataParser
+            ._parse_first_text(
+                root,
+                _OFFICIAL_JOURNAL_NUMBER_NAMES,
+            )
+        )
+        page_first = (
+            RdfXmlEurLexMetadataParser
+            ._parse_first_text(
+                root,
+                _OFFICIAL_JOURNAL_PAGE_FIRST_NAMES,
+            )
+        )
+        page_last = (
+            RdfXmlEurLexMetadataParser
+            ._parse_first_text(
+                root,
+                _OFFICIAL_JOURNAL_PAGE_LAST_NAMES,
+            )
+        )
+
+        if all(
+            value is None
+            for value in (
+                uri,
+                number,
+                page_first,
+                page_last,
+            )
+        ):
+            return None
+
+        return EurLexOfficialJournalReference(
+            uri=uri,
+            number=number,
+            page_first=page_first,
+            page_last=page_last,
+        )
+
+    @staticmethod
+    def _parse_first_text(
+        root: ElementTree.Element,
+        names: frozenset[str],
+    ) -> str | None:
+        for element in root.iter():
+            if _local_name(element.tag) not in names:
+                continue
+
+            value = _text_value(element)
+            if value is not None:
+                return value
+
+        return None
+
+    @staticmethod
     def _parse_first_resource(
         root: ElementTree.Element,
         names: frozenset[str],
@@ -318,7 +460,42 @@ def _parse_language(
     if raw_value is None:
         return None
 
-    candidate = raw_value.strip().split("-", maxsplit=1)[0]
+    candidate = (
+        raw_value.strip()
+        .split("-", maxsplit=1)[0]
+        .casefold()
+    )
+    three_letter_codes = {
+        "bul": "bg",
+        "ces": "cs",
+        "dan": "da",
+        "deu": "de",
+        "ell": "el",
+        "eng": "en",
+        "est": "et",
+        "fin": "fi",
+        "fra": "fr",
+        "gle": "ga",
+        "hrv": "hr",
+        "hun": "hu",
+        "ita": "it",
+        "lit": "lt",
+        "lav": "lv",
+        "mlt": "mt",
+        "nld": "nl",
+        "pol": "pl",
+        "por": "pt",
+        "ron": "ro",
+        "slk": "sk",
+        "slv": "sl",
+        "spa": "es",
+        "swe": "sv",
+    }
+    candidate = three_letter_codes.get(
+        candidate,
+        candidate,
+    )
+
     if len(candidate) != 2:
         return None
 

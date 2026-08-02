@@ -65,6 +65,8 @@ from eke.application.eurlex.import_service import (
 )
 from eke.application.eurlex.metadata import (
     EurLexMetadata,
+    EurLexMetadataCompleteness,
+    EurLexOfficialJournalReference,
     EurLexTitle,
 )
 from eke.application.eurlex.parser import EurLexMetadataParser
@@ -89,6 +91,8 @@ __all__ = [
     "EurLexImportResult",
     "EurLexMalformedMetadataError",
     "EurLexMetadata",
+    "EurLexMetadataCompleteness",
+    "EurLexOfficialJournalReference",
     "EurLexMetadataError",
     "EurLexMetadataMismatchError",
     "EurLexMetadataParser",
