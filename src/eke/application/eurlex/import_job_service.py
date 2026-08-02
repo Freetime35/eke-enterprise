@@ -11,6 +11,7 @@ from uuid import UUID
 
 from eke.application.eurlex.bulk_import import (
     EurLexBulkImportResult,
+    EurLexBulkImportStatus,
 )
 from eke.application.eurlex.import_job_duration_metrics import (
     ImportJobDurationStatistics,
@@ -28,6 +29,11 @@ from eke.application.eurlex.import_job_metrics import (
 )
 from eke.application.eurlex.import_job_repository import (
     ImportJobRepository,
+)
+from eke.application.eurlex.import_job_results import (
+    ImportJobResultError,
+    ImportJobResultItem,
+    parse_import_job_results,
 )
 from eke.application.eurlex.import_job_search import (
     ImportJobSearchCriteria,
@@ -320,6 +326,50 @@ class EurLexImportJobService:
         self._repository.save(recovered)
 
         return recovered
+
+
+    def get_result_items(
+        self,
+        job_uuid: UUID,
+        *,
+        item_status: EurLexBulkImportStatus | None = None,
+    ) -> tuple[ImportJobResultItem, ...]:
+        """Return persisted result items for one terminal job."""
+        job = self.get_job(job_uuid)
+
+        if job.status not in {
+            ImportJobStatus.COMPLETED,
+            ImportJobStatus.PARTIALLY_FAILED,
+            ImportJobStatus.FAILED,
+        }:
+            raise ImportJobStateError(
+                "only terminal import jobs expose result items"
+            )
+
+        try:
+            items = parse_import_job_results(
+                job.result_json
+            )
+        except ImportJobResultError as exc:
+            raise ImportJobStateError(str(exc)) from exc
+
+        if item_status is None:
+            return items
+
+        if not isinstance(
+            item_status,
+            EurLexBulkImportStatus,
+        ):
+            raise TypeError(
+                "item_status must be an "
+                "EurLexBulkImportStatus or None"
+            )
+
+        return tuple(
+            item
+            for item in items
+            if item.status is item_status
+        )
 
     def get_failed_items(
         self,

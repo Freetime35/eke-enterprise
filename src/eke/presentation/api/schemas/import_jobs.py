@@ -8,6 +8,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from eke.application.eurlex import EurLexBulkImportStatus
 from eke.domain.imports import ImportJobStatus
 
 
@@ -42,6 +43,29 @@ class ImportJobResponse(BaseModel):
     retried_from_job_uuid: UUID | None
     results: list[dict[str, Any]] | None
     error_detail: str | None
+
+
+
+class ImportJobResultItemResponse(BaseModel):
+    """Represent one persisted import result item."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    celex: str
+    status: EurLexBulkImportStatus
+    resource_uuid: str | None
+    error_code: str | None
+    detail: str | None
+
+
+class ImportJobResultItemsResponse(BaseModel):
+    """Represent item-level results for one import job."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    job_uuid: UUID
+    count: int
+    items: list[ImportJobResultItemResponse]
 
 
 class FailedImportItemResponse(BaseModel):

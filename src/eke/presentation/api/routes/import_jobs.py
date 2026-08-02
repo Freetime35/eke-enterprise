@@ -18,6 +18,7 @@ from fastapi import (
 )
 
 from eke.application.eurlex import (
+    EurLexBulkImportStatus,
     EurLexImportJobService,
     ImportJobLineageError,
     ImportJobNotFoundError,
@@ -46,6 +47,8 @@ from eke.presentation.api.schemas import (
 from eke.presentation.api.schemas.import_jobs import (
     FailedImportItemResponse,
     FailedImportItemsResponse,
+    ImportJobResultItemResponse,
+    ImportJobResultItemsResponse,
 )
 
 router = APIRouter(
@@ -250,6 +253,53 @@ def get_import_job(
 ) -> ImportJobResponse:
     return _to_response(
         _get_job(service, job_uuid)
+    )
+
+
+
+@router.get(
+    "/{job_uuid}/items",
+    response_model=ImportJobResultItemsResponse,
+    summary="Get EUR-Lex import job result items",
+)
+def get_import_job_result_items(
+    job_uuid: UUID,
+    service: ImportJobServiceDependency,
+    item_status: Annotated[
+        EurLexBulkImportStatus | None,
+        Query(alias="status"),
+    ] = None,
+) -> ImportJobResultItemsResponse:
+    """Return all persisted item-level results."""
+    try:
+        items = service.get_result_items(
+            job_uuid,
+            item_status=item_status,
+        )
+    except ImportJobNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except ImportJobStateError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    return ImportJobResultItemsResponse(
+        job_uuid=job_uuid,
+        count=len(items),
+        items=[
+            ImportJobResultItemResponse(
+                celex=item.celex,
+                status=item.status,
+                resource_uuid=item.resource_uuid,
+                error_code=item.error_code,
+                detail=item.detail,
+            )
+            for item in items
+        ],
     )
 
 
