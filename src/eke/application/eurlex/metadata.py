@@ -12,6 +12,9 @@ from eke.application.eurlex.enrichment import (
 from eke.application.eurlex.institutional_provenance import (
     EurLexInstitution,
 )
+from eke.application.eurlex.regulatory_families import (
+    EurLexRegulatoryFamilyMatch,
+)
 from eke.application.eurlex.titles import (
     EurLexTitleKind,
 )
@@ -123,6 +126,10 @@ class EurLexMetadata:
     eurovoc_concept_uris: tuple[str, ...] = ()
     classifications: tuple[EurLexClassification, ...] = ()
     relationships: tuple[EurLexRelationship, ...] = ()
+    regulatory_families: tuple[
+        EurLexRegulatoryFamilyMatch,
+        ...,
+    ] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(
@@ -190,6 +197,18 @@ class EurLexMetadata:
             raise TypeError(
                 "official_journal must be an "
                 "EurLexOfficialJournalReference or None"
+            )
+
+        if any(
+            not isinstance(
+                match,
+                EurLexRegulatoryFamilyMatch,
+            )
+            for match in self.regulatory_families
+        ):
+            raise TypeError(
+                "regulatory_families must contain "
+                "EurLexRegulatoryFamilyMatch values"
             )
 
         if any(

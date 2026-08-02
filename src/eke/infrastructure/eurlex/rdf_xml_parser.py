@@ -19,6 +19,9 @@ from eke.application.eurlex import (
 from eke.application.eurlex.institutional_provenance import (
     normalize_institutions,
 )
+from eke.application.eurlex.regulatory_families import (
+    detect_regulatory_families,
+)
 from eke.application.eurlex.relationship_mapper import (
     relationship_type_from_predicate,
 )
@@ -258,6 +261,10 @@ class RdfXmlEurLexMetadataParser:
             ),
             relationships=self._parse_relationships(
                 root
+            ),
+            regulatory_families=detect_regulatory_families(
+                parsed_celex or document.celex_identifier,
+                titles,
             ),
         )
 

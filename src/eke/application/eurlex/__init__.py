@@ -80,6 +80,12 @@ from eke.application.eurlex.metadata import (
     EurLexTitle,
 )
 from eke.application.eurlex.parser import EurLexMetadataParser
+from eke.application.eurlex.regulatory_families import (
+    EurLexRegulatoryFamily,
+    EurLexRegulatoryFamilyMatch,
+    RegulatoryFamilyEvidenceKind,
+    detect_regulatory_families,
+)
 from eke.application.eurlex.relationship_mapper import (
     relationship_type_from_predicate,
 )
@@ -94,6 +100,10 @@ from eke.application.eurlex.titles import (
 )
 
 __all__ = [
+    "detect_regulatory_families",
+    "RegulatoryFamilyEvidenceKind",
+    "EurLexRegulatoryFamilyMatch",
+    "EurLexRegulatoryFamily",
     "title_kind_from_predicate",
     "EurLexTitleKind",
     "normalize_institutions",
