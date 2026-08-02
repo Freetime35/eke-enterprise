@@ -1,26 +1,27 @@
-"""Tests for complete EUR-Lex aggregate enrichment."""
+"""Tests for resolved EUR-Lex relationship import."""
 
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 
 from eke.application.eurlex import (
-    EurLexClassification,
     EurLexDocument,
     EurLexMetadata,
     EurLexRelationship,
     EurLexResourceImportService,
-    EurLexTitle,
 )
 from eke.domain.identity import (
     CelexIdentifier,
     ResourceUUID,
 )
-from eke.domain.localization import LanguageCode
 from eke.domain.relationships import RelationshipType
 from eke.domain.resources import Resource
 from eke.infrastructure.repositories import (
     InMemoryResourceRepository,
 )
-from eke.infrastructure.unit_of_work import InMemoryUnitOfWork
+from eke.infrastructure.unit_of_work import (
+    InMemoryUnitOfWork,
+)
+
+NOW = datetime(2026, 8, 2, 12, 0, tzinfo=UTC)
 
 
 class Client:
@@ -35,47 +36,34 @@ class Client:
             content_type=accept,
             content=b"<rdf:RDF />",
             source_url="https://example.test/source",
-            retrieved_at=datetime(
-                2026,
-                8,
-                1,
-                12,
-                0,
-                tzinfo=UTC,
-            ),
+            retrieved_at=NOW,
         )
 
 
 class Parser:
+    def __init__(
+        self,
+        target: CelexIdentifier,
+    ) -> None:
+        self._target = target
+
     def parse(
         self,
         document: EurLexDocument,
     ) -> EurLexMetadata:
         return EurLexMetadata(
-            celex_identifier=document.celex_identifier,
-            titles=(
-                EurLexTitle(
-                    LanguageCode("en"),
-                    "Imported regulation",
-                ),
-            ),
-            document_date=date(2023, 5, 31),
-            entry_into_force_date=date(2023, 6, 29),
-            status_uri="https://example.test/IN_FORCE",
-            resource_type_uri="https://example.test/REG",
-            classifications=(
-                EurLexClassification(
-                    uri="http://eurovoc.europa.eu/1001",
-                    code="1001",
-                    language=LanguageCode("en"),
-                    label="financial market",
-                ),
+            celex_identifier=(
+                document.celex_identifier
             ),
             relationships=(
                 EurLexRelationship(
-                    target_celex=CelexIdentifier.parse(
-                        "32013R0575"
+                    target_celex=self._target,
+                    relationship_type=(
+                        RelationshipType.AMENDS
                     ),
+                ),
+                EurLexRelationship(
+                    target_celex=self._target,
                     relationship_type=(
                         RelationshipType.AMENDS
                     ),
@@ -84,9 +72,8 @@ class Parser:
         )
 
 
-def test_full_import_enriches_owned_aggregate_values() -> None:
+def test_imports_only_resolved_relationships() -> None:
     repository = InMemoryResourceRepository()
-
     target_celex = CelexIdentifier.parse(
         "32013R0575"
     )
@@ -100,7 +87,7 @@ def test_full_import_enriches_owned_aggregate_values() -> None:
 
     service = EurLexResourceImportService(
         Client(),
-        Parser(),
+        Parser(target_celex),
         lambda: InMemoryUnitOfWork(repository),
     )
 
@@ -108,21 +95,36 @@ def test_full_import_enriches_owned_aggregate_values() -> None:
         CelexIdentifier.parse("32023R1114")
     )
 
-    assert result.created
-    assert len(result.resource.versions) == 1
     assert len(result.resource.relationships) == 1
-    assert len(result.resource.classifications) == 1
-    assert len(result.resource.provenance_records) == 1
-    assert repository.count() == 2
-
     relationship = result.resource.relationships[0]
     assert relationship.target == target.resource_uuid
     assert (
         relationship.relationship_type
         is RelationshipType.AMENDS
     )
+    assert repository.count() == 2
 
-    persisted_target = repository.get_by_identifier(
-        target_celex.to_business_identifier()
+
+def test_unresolved_target_does_not_create_stub() -> None:
+    repository = InMemoryResourceRepository()
+    target_celex = CelexIdentifier.parse(
+        "32013R0575"
     )
-    assert persisted_target == target
+    service = EurLexResourceImportService(
+        Client(),
+        Parser(target_celex),
+        lambda: InMemoryUnitOfWork(repository),
+    )
+
+    result = service.import_resource(
+        CelexIdentifier.parse("32023R1114")
+    )
+
+    assert result.resource.relationships == ()
+    assert repository.count() == 1
+    assert (
+        repository.get_by_identifier(
+            target_celex.to_business_identifier()
+        )
+        is None
+    )

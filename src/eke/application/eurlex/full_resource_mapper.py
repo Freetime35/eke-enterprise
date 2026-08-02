@@ -55,12 +55,24 @@ def map_relationships(
     metadata: EurLexMetadata,
     targets: dict[str, ResourceUUID],
 ) -> tuple[ResourceRelationship, ...]:
-    """Map CELEX relationships after target UUID resolution."""
-    return tuple(
-        ResourceRelationship(
+    """Map only resolved, unique CELEX relationships."""
+    relationships: list[ResourceRelationship] = []
+
+    for item in metadata.relationships:
+        target_uuid = targets.get(
+            item.target_celex.value
+        )
+        if target_uuid is None:
+            continue
+        if target_uuid == source_uuid:
+            continue
+
+        relationship = ResourceRelationship(
             source=source_uuid,
-            target=targets[item.target_celex.value],
+            target=target_uuid,
             relationship_type=item.relationship_type,
         )
-        for item in metadata.relationships
-    )
+        if relationship not in relationships:
+            relationships.append(relationship)
+
+    return tuple(relationships)

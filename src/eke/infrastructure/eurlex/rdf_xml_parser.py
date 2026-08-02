@@ -12,8 +12,12 @@ from eke.application.eurlex import (
     EurLexMetadataMismatchError,
     EurLexMetadataParser,
     EurLexOfficialJournalReference,
+    EurLexRelationship,
     EurLexTitle,
     EurLexUnsupportedMediaTypeError,
+)
+from eke.application.eurlex.relationship_mapper import (
+    relationship_type_from_predicate,
 )
 from eke.domain.identity import CelexIdentifier
 from eke.domain.localization import LanguageCode
@@ -232,6 +236,9 @@ class RdfXmlEurLexMetadataParser:
                 root,
                 _EUROVOC_NAMES,
             ),
+            relationships=self._parse_relationships(
+                root
+            ),
         )
 
     @staticmethod
@@ -299,6 +306,37 @@ class RdfXmlEurLexMetadataParser:
                 languages.append(language)
 
         return tuple(dict.fromkeys(languages))
+
+    @staticmethod
+    def _parse_relationships(
+        root: ElementTree.Element,
+    ) -> tuple[EurLexRelationship, ...]:
+        relationships: list[EurLexRelationship] = []
+
+        for element in root.iter():
+            relationship_type = (
+                relationship_type_from_predicate(
+                    _local_name(element.tag)
+                )
+            )
+            if relationship_type is None:
+                continue
+
+            raw_target = _element_value(element)
+            target_celex = _parse_celex_reference(
+                raw_target
+            )
+            if target_celex is None:
+                continue
+
+            relationship = EurLexRelationship(
+                target_celex=target_celex,
+                relationship_type=relationship_type,
+            )
+            if relationship not in relationships:
+                relationships.append(relationship)
+
+        return tuple(relationships)
 
     @staticmethod
     def _parse_first_date(
@@ -452,6 +490,29 @@ def _element_value(
         normalized_resource = resource.strip()
         return normalized_resource or None
     return _text_value(element)
+
+
+def _parse_celex_reference(
+    raw_value: str | None,
+) -> CelexIdentifier | None:
+    if raw_value is None:
+        return None
+
+    normalized = raw_value.strip()
+    if not normalized:
+        return None
+
+    candidate = normalized.rstrip("/").rsplit(
+        "/",
+        maxsplit=1,
+    )[-1]
+    if "CELEX:" in candidate.upper():
+        candidate = candidate.split(":", maxsplit=1)[-1]
+
+    try:
+        return CelexIdentifier.parse(candidate)
+    except (TypeError, ValueError):
+        return None
 
 
 def _parse_language(

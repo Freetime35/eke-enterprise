@@ -70,6 +70,9 @@ from eke.application.eurlex.metadata import (
     EurLexTitle,
 )
 from eke.application.eurlex.parser import EurLexMetadataParser
+from eke.application.eurlex.relationship_mapper import (
+    relationship_type_from_predicate,
+)
 from eke.application.eurlex.resource_mapper import (
     map_resource_status,
     map_resource_type,
@@ -77,6 +80,7 @@ from eke.application.eurlex.resource_mapper import (
 )
 
 __all__ = [
+    "relationship_type_from_predicate",
     "BulkImportExecutor",
     "EurLexBulkImportItem",
     "EurLexBulkImportResult",

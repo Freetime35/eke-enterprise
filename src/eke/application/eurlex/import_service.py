@@ -61,18 +61,13 @@ class EurLexResourceImportService:
 
             targets: dict[str, ResourceUUID] = {}
             for relationship in metadata.relationships:
-                target_identifier = (
-                    relationship.target_celex.to_business_identifier()
-                )
                 target = uow.resources.get_by_identifier(
-                    target_identifier
+                    relationship.target_celex
+                    .to_business_identifier()
                 )
                 if target is None:
-                    target = Resource(
-                        resource_uuid=ResourceUUID.generate(),
-                        identifiers=(target_identifier,),
-                    )
-                    uow.resources.save(target)
+                    continue
+
                 targets[
                     relationship.target_celex.value
                 ] = target.resource_uuid
