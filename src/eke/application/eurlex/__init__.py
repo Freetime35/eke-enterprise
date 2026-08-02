@@ -211,6 +211,17 @@ from eke.application.eurlex.rule_qualifiers import (
     EurLexRuleQualifierMarker,
     EurLexRuleQualifiers,
 )
+from eke.application.eurlex.temporal_constraint_extractor import (
+    EurLexTemporalConstraintExtractor,
+)
+from eke.application.eurlex.temporal_constraints import (
+    EurLexTemporalConstraint,
+    EurLexTemporalConstraintKind,
+    EurLexTemporalConstraints,
+    EurLexTemporalRelation,
+    EurLexTemporalUnit,
+    normalize_temporal_constraints,
+)
 from eke.application.eurlex.titles import (
     EurLexTitleKind,
     title_kind_from_predicate,
@@ -224,6 +235,13 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "normalize_temporal_constraints",
+    "EurLexTemporalUnit",
+    "EurLexTemporalRelation",
+    "EurLexTemporalConstraints",
+    "EurLexTemporalConstraintKind",
+    "EurLexTemporalConstraintExtractor",
+    "EurLexTemporalConstraint",
     "EurLexStructuredRuleQualifiers",
     "EurLexStructuredRuleQualifier",
     "EurLexBooleanOperator",
