@@ -68,6 +68,21 @@ class ImportJobResultItemsResponse(BaseModel):
     items: list[ImportJobResultItemResponse]
 
 
+
+class ImportJobResultSummaryResponse(BaseModel):
+    """Represent aggregate item-level outcomes for one job."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    job_uuid: UUID
+    total: int
+    counts: dict[EurLexBulkImportStatus, int]
+    success_count: int
+    failure_count: int
+    success_rate: float
+    failure_rate: float
+
+
 class FailedImportItemResponse(BaseModel):
     """Represent one failed import result item."""
 

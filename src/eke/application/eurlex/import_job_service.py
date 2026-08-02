@@ -30,6 +30,9 @@ from eke.application.eurlex.import_job_metrics import (
 from eke.application.eurlex.import_job_repository import (
     ImportJobRepository,
 )
+from eke.application.eurlex.import_job_result_summary import (
+    ImportJobResultSummary,
+)
 from eke.application.eurlex.import_job_results import (
     ImportJobResultError,
     ImportJobResultItem,
@@ -369,6 +372,16 @@ class EurLexImportJobService:
             item
             for item in items
             if item.status is item_status
+        )
+
+
+    def get_result_summary(
+        self,
+        job_uuid: UUID,
+    ) -> ImportJobResultSummary:
+        """Return aggregate item-level outcomes for one job."""
+        return ImportJobResultSummary.from_items(
+            self.get_result_items(job_uuid)
         )
 
     def get_failed_items(

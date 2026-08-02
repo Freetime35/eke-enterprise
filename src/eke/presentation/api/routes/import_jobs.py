@@ -49,6 +49,7 @@ from eke.presentation.api.schemas.import_jobs import (
     FailedImportItemsResponse,
     ImportJobResultItemResponse,
     ImportJobResultItemsResponse,
+    ImportJobResultSummaryResponse,
 )
 
 router = APIRouter(
@@ -255,6 +256,41 @@ def get_import_job(
         _get_job(service, job_uuid)
     )
 
+
+
+
+@router.get(
+    "/{job_uuid}/items/summary",
+    response_model=ImportJobResultSummaryResponse,
+    summary="Get EUR-Lex import job result summary",
+)
+def get_import_job_result_summary(
+    job_uuid: UUID,
+    service: ImportJobServiceDependency,
+) -> ImportJobResultSummaryResponse:
+    """Return aggregate item-level outcomes for one job."""
+    try:
+        summary = service.get_result_summary(job_uuid)
+    except ImportJobNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except ImportJobStateError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    return ImportJobResultSummaryResponse(
+        job_uuid=job_uuid,
+        total=summary.total,
+        counts=summary.counts,
+        success_count=summary.success_count,
+        failure_count=summary.failure_count,
+        success_rate=summary.success_rate,
+        failure_rate=summary.failure_rate,
+    )
 
 
 @router.get(
