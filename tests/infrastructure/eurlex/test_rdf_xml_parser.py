@@ -9,6 +9,7 @@ from eke.application.eurlex import (
     EurLexMalformedMetadataError,
     EurLexMetadataMismatchError,
     EurLexMetadataParser,
+    EurLexTitleKind,
     EurLexUnsupportedMediaTypeError,
 )
 from eke.domain.identity import CelexIdentifier
@@ -17,7 +18,7 @@ from eke.infrastructure.eurlex import (
     RdfXmlEurLexMetadataParser,
 )
 
-RDF_XML = """<?xml version="1.0" encoding="UTF-8"?>
+RDF_XML = b"""<?xml version="1.0" encoding="UTF-8"?>
 <rdf:RDF
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:cdm="http://publications.europa.eu/ontology/cdm#"
@@ -28,7 +29,7 @@ RDF_XML = """<?xml version="1.0" encoding="UTF-8"?>
       Regulation on markets in crypto-assets
     </cdm:work_title>
     <cdm:work_title xml:lang="fr">
-      RÃ¨glement sur les marchÃ©s de crypto-actifs
+      Reglement sur les marches de crypto-actifs
     </cdm:work_title>
     <cdm:work_date_document>2023-05-31</cdm:work_date_document>
     <cdm:work_date_publication>2023-06-09</cdm:work_date_publication>
@@ -48,7 +49,7 @@ RDF_XML = """<?xml version="1.0" encoding="UTF-8"?>
         rdf:resource="http://eurovoc.europa.eu/1002"/>
   </rdf:Description>
 </rdf:RDF>
-""".encode()
+"""
 
 
 def make_document(
@@ -84,13 +85,16 @@ def test_parse_extracts_stable_metadata() -> None:
         make_document()
     )
 
-    assert metadata.celex_identifier.value == "32023R1114"
-    assert tuple(
-        title.language
-        for title in metadata.titles
-    ) == (
-        LanguageCode("en"),
-        LanguageCode("fr"),
+    assert metadata.celex_identifier.value == (
+        "32023R1114"
+    )
+    assert len(metadata.titles) == 1
+    assert metadata.titles[0].language == (
+        LanguageCode("en")
+    )
+    assert (
+        metadata.titles[0].kind
+        is EurLexTitleKind.OFFICIAL
     )
     assert metadata.titles[0].value == (
         "Regulation on markets in crypto-assets"
@@ -101,18 +105,24 @@ def test_parse_extracts_stable_metadata() -> None:
     assert metadata.publication_date.isoformat() == (
         "2023-06-09"
     )
-    assert metadata.entry_into_force_date.isoformat() == (
-        "2023-06-29"
+    assert (
+        metadata.entry_into_force_date.isoformat()
+        == "2023-06-29"
     )
-    assert metadata.end_of_validity_date.isoformat() == (
-        "2026-12-31"
+    assert (
+        metadata.end_of_validity_date.isoformat()
+        == "2026-12-31"
     )
     assert metadata.languages == (
         LanguageCode("en"),
         LanguageCode("fr"),
     )
-    assert metadata.resource_type_uri.endswith("/REG")
-    assert metadata.status_uri.endswith("/IN_FORCE")
+    assert metadata.resource_type_uri.endswith(
+        "/REG"
+    )
+    assert metadata.status_uri.endswith(
+        "/IN_FORCE"
+    )
     assert metadata.eurovoc_concept_uris == (
         "http://eurovoc.europa.eu/1001",
         "http://eurovoc.europa.eu/1002",
@@ -127,7 +137,9 @@ def test_parse_rejects_unsupported_media_type() -> None:
         match="unsupported",
     ):
         parser.parse(
-            make_document(content_type="application/pdf")
+            make_document(
+                content_type="application/pdf"
+            )
         )
 
 
@@ -138,7 +150,9 @@ def test_parse_rejects_malformed_xml() -> None:
         EurLexMalformedMetadataError,
         match="not valid XML",
     ):
-        parser.parse(make_document(content=b"<rdf:RDF>"))
+        parser.parse(
+            make_document(content=b"<rdf:RDF>")
+        )
 
 
 def test_parse_rejects_celex_mismatch() -> None:
@@ -164,8 +178,11 @@ def test_parse_uses_requested_celex_when_absent() -> None:
       </rdf:Description>
     </rdf:RDF>"""
 
-    metadata = RdfXmlEurLexMetadataParser().parse(
-        make_document(content=payload)
+    metadata = (
+        RdfXmlEurLexMetadataParser()
+        .parse(make_document(content=payload))
     )
 
-    assert metadata.celex_identifier.value == "32023R1114"
+    assert metadata.celex_identifier.value == (
+        "32023R1114"
+    )

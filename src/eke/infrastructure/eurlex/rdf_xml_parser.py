@@ -22,6 +22,9 @@ from eke.application.eurlex.institutional_provenance import (
 from eke.application.eurlex.relationship_mapper import (
     relationship_type_from_predicate,
 )
+from eke.application.eurlex.titles import (
+    title_kind_from_predicate,
+)
 from eke.domain.identity import CelexIdentifier
 from eke.domain.localization import LanguageCode
 
@@ -53,6 +56,16 @@ _TITLE_NAMES = frozenset(
         "work_title",
         "expression_title",
         "resource_legal_title",
+        "work_title_short",
+        "expression_title_short",
+        "resource_legal_title_short",
+        "title_short",
+        "short_title",
+        "work_title_alternative",
+        "expression_title_alternative",
+        "resource_legal_title_alternative",
+        "title_alternative",
+        "alternative_title",
     }
 )
 _DOCUMENT_DATE_NAMES = frozenset(
@@ -271,22 +284,34 @@ class RdfXmlEurLexMetadataParser:
         root: ElementTree.Element,
     ) -> tuple[EurLexTitle, ...]:
         titles: list[EurLexTitle] = []
+        english = LanguageCode("en")
 
         for element in root.iter():
-            if _local_name(element.tag) not in _TITLE_NAMES:
+            predicate = _local_name(element.tag)
+            if predicate not in _TITLE_NAMES:
                 continue
-            value = _text_value(element)
-            if value is None:
+
+            kind = title_kind_from_predicate(
+                predicate
+            )
+            if kind is None:
                 continue
 
             raw_language = element.attrib.get(
                 _XML_LANGUAGE_ATTRIBUTE
             )
             language = _parse_language(raw_language)
+            if language != english:
+                continue
+
+            value = _text_value(element)
+            if value is None:
+                continue
 
             title = EurLexTitle(
-                language=language,
+                language=english,
                 value=value,
+                kind=kind,
             )
             if title not in titles:
                 titles.append(title)

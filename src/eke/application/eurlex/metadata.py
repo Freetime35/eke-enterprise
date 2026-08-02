@@ -12,6 +12,9 @@ from eke.application.eurlex.enrichment import (
 from eke.application.eurlex.institutional_provenance import (
     EurLexInstitution,
 )
+from eke.application.eurlex.titles import (
+    EurLexTitleKind,
+)
 from eke.domain.identity import CelexIdentifier
 from eke.domain.localization import LanguageCode
 
@@ -22,6 +25,7 @@ class EurLexTitle:
 
     language: LanguageCode | None
     value: str
+    kind: EurLexTitleKind = EurLexTitleKind.UNKNOWN
 
     def __post_init__(self) -> None:
         if self.language is not None and not isinstance(
@@ -35,6 +39,11 @@ class EurLexTitle:
         normalized = " ".join(self.value.split())
         if not normalized:
             raise ValueError("value must not be empty")
+
+        if not isinstance(self.kind, EurLexTitleKind):
+            raise TypeError(
+                "kind must be an EurLexTitleKind"
+            )
 
         object.__setattr__(self, "value", normalized)
 
