@@ -15,6 +15,9 @@ from eke.application.eurlex.enrichment import (
 from eke.application.eurlex.institutional_provenance import (
     EurLexInstitution,
 )
+from eke.application.eurlex.legal_bases import (
+    EurLexLegalBasis,
+)
 from eke.application.eurlex.legal_lifecycle import (
     EurLexAmendmentEvent,
     EurLexLegalLifecycleEvent,
@@ -162,6 +165,11 @@ class EurLexMetadata:
 
     corrigenda: tuple[
         EurLexCorrigendum,
+        ...,
+    ] = ()
+
+    legal_bases: tuple[
+        EurLexLegalBasis,
         ...,
     ] = ()
 
@@ -334,6 +342,18 @@ class EurLexMetadata:
             raise TypeError(
                 "corrigenda must contain "
                 "EurLexCorrigendum values"
+            )
+
+        if any(
+            not isinstance(
+                legal_basis,
+                EurLexLegalBasis,
+            )
+            for legal_basis in self.legal_bases
+        ):
+            raise TypeError(
+                "legal_bases must contain "
+                "EurLexLegalBasis values"
             )
 
     def assess_completeness(

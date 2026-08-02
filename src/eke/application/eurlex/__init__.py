@@ -78,6 +78,12 @@ from eke.application.eurlex.institutional_provenance import (
     institution_from_uri,
     normalize_institutions,
 )
+from eke.application.eurlex.legal_bases import (
+    EurLexLegalBasis,
+    EurLexLegalBasisKind,
+    legal_basis_kind_from_predicate,
+    normalize_legal_bases,
+)
 from eke.application.eurlex.legal_lifecycle import (
     EurLexAmendmentEvent,
     EurLexLegalLifecycleEvent,
@@ -125,6 +131,10 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "normalize_legal_bases",
+    "legal_basis_kind_from_predicate",
+    "EurLexLegalBasisKind",
+    "EurLexLegalBasis",
     "normalize_corrigenda",
     "EurLexCorrigendumIdentifier",
     "EurLexCorrigendum",

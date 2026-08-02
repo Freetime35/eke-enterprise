@@ -24,6 +24,11 @@ from eke.application.eurlex.corrigenda import (
 from eke.application.eurlex.institutional_provenance import (
     normalize_institutions,
 )
+from eke.application.eurlex.legal_bases import (
+    EurLexLegalBasis,
+    legal_basis_kind_from_predicate,
+    normalize_legal_bases,
+)
 from eke.application.eurlex.legal_lifecycle import (
     EurLexAmendmentEvent,
     EurLexLegalLifecycleEvent,
@@ -221,6 +226,35 @@ _CORRIGENDUM_PUBLICATION_DATE_NAMES = frozenset(
     }
 )
 
+_LEGAL_BASIS_TREATY_NAMES = frozenset(
+    {
+        "treaty",
+        "treaty_code",
+        "basis_treaty",
+    }
+)
+_LEGAL_BASIS_ARTICLE_NAMES = frozenset(
+    {
+        "article",
+        "article_number",
+        "basis_article",
+    }
+)
+_LEGAL_BASIS_PARAGRAPH_NAMES = frozenset(
+    {
+        "paragraph",
+        "paragraph_number",
+        "basis_paragraph",
+    }
+)
+_LEGAL_BASIS_LABEL_NAMES = frozenset(
+    {
+        "label",
+        "basis_label",
+        "title",
+    }
+)
+
 _LANGUAGE_NAMES = frozenset(
     {
         "expression_uses_language",
@@ -404,6 +438,9 @@ class RdfXmlEurLexMetadataParser:
             ),
             corrigenda=(
                 self._parse_corrigenda(root)
+            ),
+            legal_bases=(
+                self._parse_legal_bases(root)
             ),
         )
 
@@ -782,6 +819,67 @@ class RdfXmlEurLexMetadataParser:
 
         return normalize_corrigenda(
             tuple(corrigenda)
+        )
+
+    @staticmethod
+    def _parse_legal_bases(
+        root: ElementTree.Element,
+    ) -> tuple[EurLexLegalBasis, ...]:
+        legal_bases: list[EurLexLegalBasis] = []
+
+        for element in root.iter():
+            predicate = _local_name(element.tag)
+            kind = legal_basis_kind_from_predicate(
+                predicate
+            )
+            if kind is None:
+                continue
+
+            raw_target = _element_value(element)
+            target_celex = _parse_celex_reference(
+                raw_target
+            )
+            target_uri = (
+                raw_target
+                if (
+                    raw_target is not None
+                    and target_celex is None
+                )
+                else None
+            )
+            if (
+                target_uri is None
+                and target_celex is None
+            ):
+                continue
+
+            legal_bases.append(
+                EurLexLegalBasis(
+                    kind=kind,
+                    target_uri=target_uri,
+                    target_celex=target_celex,
+                    treaty=_first_nested_text(
+                        element,
+                        _LEGAL_BASIS_TREATY_NAMES,
+                    ),
+                    article=_first_nested_text(
+                        element,
+                        _LEGAL_BASIS_ARTICLE_NAMES,
+                    ),
+                    paragraph=_first_nested_text(
+                        element,
+                        _LEGAL_BASIS_PARAGRAPH_NAMES,
+                    ),
+                    label=_first_nested_text(
+                        element,
+                        _LEGAL_BASIS_LABEL_NAMES,
+                    ),
+                    source_predicate=predicate,
+                )
+            )
+
+        return normalize_legal_bases(
+            tuple(legal_bases)
         )
 
     @staticmethod
