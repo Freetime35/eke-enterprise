@@ -1,5 +1,17 @@
 """EUR-Lex application ports, models, and workflows."""
 
+from eke.application.eurlex.boolean_expression_parser import (
+    EurLexBooleanExpressionParseError,
+    EurLexBooleanExpressionParser,
+)
+from eke.application.eurlex.boolean_expressions import (
+    EurLexBooleanAtom,
+    EurLexBooleanExpressionTree,
+    EurLexBooleanOperation,
+    EurLexBooleanOperator,
+    EurLexStructuredRuleQualifier,
+    EurLexStructuredRuleQualifiers,
+)
 from eke.application.eurlex.bulk_import import (
     EurLexBulkImportItem,
     EurLexBulkImportResult,
@@ -212,6 +224,14 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "EurLexStructuredRuleQualifiers",
+    "EurLexStructuredRuleQualifier",
+    "EurLexBooleanOperator",
+    "EurLexBooleanOperation",
+    "EurLexBooleanExpressionTree",
+    "EurLexBooleanExpressionParser",
+    "EurLexBooleanExpressionParseError",
+    "EurLexBooleanAtom",
     "EurLexRuleQualifiers",
     "EurLexRuleQualifierMarker",
     "EurLexRuleQualifierKind",
