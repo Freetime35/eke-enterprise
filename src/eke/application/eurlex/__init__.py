@@ -98,6 +98,11 @@ from eke.application.eurlex.legal_bases import (
     legal_basis_kind_from_predicate,
     normalize_legal_bases,
 )
+from eke.application.eurlex.legal_definitions import (
+    EurLexLegalDefinition,
+    EurLexLegalDefinitions,
+    normalize_legal_definitions,
+)
 from eke.application.eurlex.legal_lifecycle import (
     EurLexAmendmentEvent,
     EurLexLegalLifecycleEvent,
@@ -145,6 +150,9 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "normalize_legal_definitions",
+    "EurLexLegalDefinitions",
+    "EurLexLegalDefinition",
     "EurLexVisualKind",
     "EurLexVisualElement",
     "EurLexTableCell",

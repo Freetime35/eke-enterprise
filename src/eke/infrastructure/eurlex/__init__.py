@@ -15,6 +15,10 @@ from eke.infrastructure.eurlex.httpx_client import (
     DEFAULT_CELEX_BASE_URL,
     HttpxEurLexClient,
 )
+from eke.infrastructure.eurlex.legal_definition_parser import (
+    EurLexLegalDefinitionParseError,
+    EurLexLegalDefinitionParser,
+)
 from eke.infrastructure.eurlex.sqlalchemy_import_job_repository import (
     SQLAlchemyImportJobRepository,
 )
@@ -27,6 +31,8 @@ RdfXmlEurLexMetadataParser = (
 )
 
 __all__ = [
+    "EurLexLegalDefinitionParser",
+    "EurLexLegalDefinitionParseError",
     "XmlEurLexComplexContentParser",
     "EurLexComplexDocumentContentParseError",
     "DEFAULT_CELEX_BASE_URL",
