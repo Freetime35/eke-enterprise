@@ -49,6 +49,10 @@ from eke.application.eurlex.import_job_service import (
     ImportJobNotFoundError,
     ImportJobStateError,
 )
+from eke.application.eurlex.import_job_staleness import (
+    StaleImportJob,
+    StaleImportJobReport,
+)
 from eke.application.eurlex.import_job_summary import (
     ImportJobStatusSummary,
 )
@@ -104,6 +108,8 @@ __all__ = [
     "ImportJobStateError",
     "ImportJobStatusSummary",
     "ImportJobWorker",
+    "StaleImportJob",
+    "StaleImportJobReport",
     "map_classifications",
     "map_relationships",
     "map_resource_status",

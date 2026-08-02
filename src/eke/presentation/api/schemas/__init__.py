@@ -23,6 +23,8 @@ from eke.presentation.api.schemas.import_jobs import (
     ImportJobSearchResponse,
     ImportJobStatusSummaryResponse,
     ImportJobSubmissionResponse,
+    StaleImportJobReportResponse,
+    StaleImportJobResponse,
 )
 from eke.presentation.api.schemas.resource_classifications import (
     ResourceClassificationCreateRequest,
@@ -82,6 +84,8 @@ __all__ = [
     "ResourceUpdateRequest",
     "ResourceVersionCreateRequest",
     "ResourceVersionResponse",
+    "StaleImportJobReportResponse",
+    "StaleImportJobResponse",
     "ValidationErrorItem",
     "ValidationErrorResponse",
 ]

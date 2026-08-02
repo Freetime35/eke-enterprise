@@ -28,6 +28,9 @@ from eke.application.eurlex.import_job_search import (
     ImportJobSearchCriteria,
     ImportJobSearchPage,
 )
+from eke.application.eurlex.import_job_staleness import (
+    StaleImportJobReport,
+)
 from eke.application.eurlex.import_job_summary import (
     ImportJobStatusSummary,
 )
@@ -213,6 +216,34 @@ class EurLexImportJobService:
 
         return ImportJobDurationStatistics.from_jobs(
             tuple(jobs)
+        )
+
+    def get_stale_jobs(
+        self,
+        *,
+        threshold_seconds: int,
+    ) -> StaleImportJobReport:
+        """Return running jobs older than the threshold."""
+        jobs: list[ImportJob] = []
+        offset = 0
+
+        while True:
+            page = self._repository.search(
+                ImportJobSearchCriteria(
+                    status=ImportJobStatus.RUNNING,
+                    limit=100,
+                    offset=offset,
+                )
+            )
+            jobs.extend(page.items)
+            offset += len(page.items)
+            if offset >= page.total:
+                break
+
+        return StaleImportJobReport.from_jobs(
+            tuple(jobs),
+            threshold_seconds=threshold_seconds,
+            observed_at=self._now(),
         )
 
     def search_jobs(

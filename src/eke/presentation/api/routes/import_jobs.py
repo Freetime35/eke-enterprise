@@ -40,6 +40,8 @@ from eke.presentation.api.schemas import (
     ImportJobSearchResponse,
     ImportJobStatusSummaryResponse,
     ImportJobSubmissionResponse,
+    StaleImportJobReportResponse,
+    StaleImportJobResponse,
 )
 
 router = APIRouter(
@@ -166,18 +168,46 @@ def get_import_job_metrics(
 @router.get(
     "/durations",
     response_model=ImportJobDurationStatisticsResponse,
-    summary="Get EUR-Lex import job duration statistics",
 )
 def get_import_job_duration_statistics(
     service: ImportJobServiceDependency,
 ) -> ImportJobDurationStatisticsResponse:
-    """Return duration statistics for completed executions."""
     statistics = service.get_duration_statistics()
     return ImportJobDurationStatisticsResponse(
         sample_count=statistics.sample_count,
         minimum_seconds=statistics.minimum_seconds,
         maximum_seconds=statistics.maximum_seconds,
         average_seconds=statistics.average_seconds,
+    )
+
+
+@router.get(
+    "/stale",
+    response_model=StaleImportJobReportResponse,
+    summary="Get stale EUR-Lex import jobs",
+)
+def get_stale_import_jobs(
+    service: ImportJobServiceDependency,
+    threshold_seconds: Annotated[
+        int,
+        Query(ge=1, le=604800),
+    ] = 3600,
+) -> StaleImportJobReportResponse:
+    """Return running jobs older than the threshold."""
+    report = service.get_stale_jobs(
+        threshold_seconds=threshold_seconds
+    )
+    return StaleImportJobReportResponse(
+        threshold_seconds=report.threshold_seconds,
+        observed_at=report.observed_at,
+        count=len(report.items),
+        items=[
+            StaleImportJobResponse(
+                job=_to_response(item.job),
+                age_seconds=item.age_seconds,
+            )
+            for item in report.items
+        ],
     )
 
 

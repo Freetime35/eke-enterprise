@@ -44,6 +44,26 @@ class ImportJobResponse(BaseModel):
     error_detail: str | None
 
 
+class StaleImportJobResponse(BaseModel):
+    """Represent one stale running import job."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    job: ImportJobResponse
+    age_seconds: float
+
+
+class StaleImportJobReportResponse(BaseModel):
+    """Represent stale jobs for one threshold."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    threshold_seconds: int
+    observed_at: datetime
+    count: int
+    items: list[StaleImportJobResponse]
+
+
 class ImportJobLineageResponse(BaseModel):
     """Represent one retry chain from root to current job."""
 
