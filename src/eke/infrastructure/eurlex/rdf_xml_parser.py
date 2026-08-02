@@ -16,6 +16,9 @@ from eke.application.eurlex import (
     EurLexTitle,
     EurLexUnsupportedMediaTypeError,
 )
+from eke.application.eurlex.institutional_provenance import (
+    normalize_institutions,
+)
 from eke.application.eurlex.relationship_mapper import (
     relationship_type_from_predicate,
 )
@@ -189,6 +192,10 @@ class RdfXmlEurLexMetadataParser:
 
         titles = self._parse_titles(root)
         languages = self._parse_languages(root, titles)
+        responsible_agent_uris = self._parse_resources(
+            root,
+            _RESPONSIBLE_AGENT_NAMES,
+        )
 
         return EurLexMetadata(
             celex_identifier=(
@@ -228,9 +235,9 @@ class RdfXmlEurLexMetadataParser:
             official_journal=self._parse_official_journal(
                 root
             ),
-            responsible_agent_uris=self._parse_resources(
-                root,
-                _RESPONSIBLE_AGENT_NAMES,
+            responsible_agent_uris=responsible_agent_uris,
+            institutions=normalize_institutions(
+                responsible_agent_uris
             ),
             eurovoc_concept_uris=self._parse_resources(
                 root,

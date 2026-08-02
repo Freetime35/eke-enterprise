@@ -67,6 +67,12 @@ from eke.application.eurlex.import_result import EurLexImportResult
 from eke.application.eurlex.import_service import (
     EurLexResourceImportService,
 )
+from eke.application.eurlex.institutional_provenance import (
+    EurLexInstitution,
+    EurLexInstitutionType,
+    institution_from_uri,
+    normalize_institutions,
+)
 from eke.application.eurlex.metadata import (
     EurLexMetadata,
     EurLexMetadataCompleteness,
@@ -84,6 +90,10 @@ from eke.application.eurlex.resource_mapper import (
 )
 
 __all__ = [
+    "normalize_institutions",
+    "institution_from_uri",
+    "EurLexInstitutionType",
+    "EurLexInstitution",
     "classify_financial_label",
     "FinancialClassificationCategory",
     "relationship_type_from_predicate",

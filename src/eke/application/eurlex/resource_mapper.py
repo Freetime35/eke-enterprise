@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from hashlib import sha256
 
 from eke.application.eurlex.document import EurLexDocument
@@ -78,8 +79,47 @@ def resource_from_eurlex(
             metadata.end_of_validity_date,
         ),
         titles=titles,
-        provenance_records=(provenance,),
+        provenance_records=(
+            provenance,
+            *_institution_provenance_records(
+                resource_uuid,
+                metadata,
+                document.retrieved_at,
+            ),
+        ),
     )
+
+
+
+def _institution_provenance_records(
+    resource_uuid: ResourceUUID,
+    metadata: EurLexMetadata,
+    acquired_at: datetime,
+) -> tuple[ProvenanceRecord, ...]:
+    """Map recognized financial authorities to derived provenance."""
+    if not isinstance(acquired_at, datetime):
+        raise TypeError(
+            "acquired_at must be a datetime"
+        )
+
+    records: list[ProvenanceRecord] = []
+
+    for institution in metadata.institutions:
+        source = institution.provenance_source
+        if source is None:
+            continue
+
+        record = ProvenanceRecord(
+            resource_uuid=resource_uuid,
+            source=source,
+            source_reference=institution.uri,
+            acquired_at=acquired_at,
+            acquisition_method=AcquisitionMethod.DERIVED,
+        )
+        if record not in records:
+            records.append(record)
+
+    return tuple(records)
 
 
 def map_resource_type(

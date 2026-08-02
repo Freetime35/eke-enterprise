@@ -9,6 +9,9 @@ from eke.application.eurlex.enrichment import (
     EurLexClassification,
     EurLexRelationship,
 )
+from eke.application.eurlex.institutional_provenance import (
+    EurLexInstitution,
+)
 from eke.domain.identity import CelexIdentifier
 from eke.domain.localization import LanguageCode
 
@@ -107,6 +110,7 @@ class EurLexMetadata:
         EurLexOfficialJournalReference | None
     ) = None
     responsible_agent_uris: tuple[str, ...] = ()
+    institutions: tuple[EurLexInstitution, ...] = ()
     eurovoc_concept_uris: tuple[str, ...] = ()
     classifications: tuple[EurLexClassification, ...] = ()
     relationships: tuple[EurLexRelationship, ...] = ()
@@ -177,6 +181,18 @@ class EurLexMetadata:
             raise TypeError(
                 "official_journal must be an "
                 "EurLexOfficialJournalReference or None"
+            )
+
+        if any(
+            not isinstance(
+                institution,
+                EurLexInstitution,
+            )
+            for institution in self.institutions
+        ):
+            raise TypeError(
+                "institutions must contain "
+                "EurLexInstitution values"
             )
 
         for name, values in (
