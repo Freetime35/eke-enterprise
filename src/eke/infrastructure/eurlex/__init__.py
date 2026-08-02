@@ -15,6 +15,10 @@ from eke.infrastructure.eurlex.httpx_client import (
     DEFAULT_CELEX_BASE_URL,
     HttpxEurLexClient,
 )
+from eke.infrastructure.eurlex.internal_reference_parser import (
+    EurLexInternalReferenceParseError,
+    EurLexInternalReferenceParser,
+)
 from eke.infrastructure.eurlex.legal_definition_parser import (
     EurLexLegalDefinitionParseError,
     EurLexLegalDefinitionParser,
@@ -43,6 +47,8 @@ RdfXmlEurLexMetadataParser = (
 )
 
 __all__ = [
+    "EurLexInternalReferenceParser",
+    "EurLexInternalReferenceParseError",
     "EurLexLegalProhibitionParser",
     "EurLexLegalProhibitionParseError",
     "EurLexLegalPermissionParser",

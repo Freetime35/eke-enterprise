@@ -92,6 +92,12 @@ from eke.application.eurlex.institutional_provenance import (
     institution_from_uri,
     normalize_institutions,
 )
+from eke.application.eurlex.internal_references import (
+    EurLexInternalReference,
+    EurLexInternalReferenceKind,
+    EurLexInternalReferences,
+    normalize_internal_references,
+)
 from eke.application.eurlex.legal_bases import (
     EurLexLegalBasis,
     EurLexLegalBasisKind,
@@ -168,6 +174,10 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "normalize_internal_references",
+    "EurLexInternalReferences",
+    "EurLexInternalReferenceKind",
+    "EurLexInternalReference",
     "normalize_legal_prohibitions",
     "EurLexLegalProhibitions",
     "EurLexLegalProhibitionKind",
