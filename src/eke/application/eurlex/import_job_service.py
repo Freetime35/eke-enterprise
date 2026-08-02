@@ -16,8 +16,9 @@ from eke.application.eurlex.import_job_duration_metrics import (
     ImportJobDurationStatistics,
 )
 from eke.application.eurlex.import_job_failed_items import (
+    FailedImportItem,
     FailedImportJobResultError,
-    extract_failed_celex,
+    extract_failed_items,
 )
 from eke.application.eurlex.import_job_lineage import (
     ImportJobLineage,
@@ -320,6 +321,26 @@ class EurLexImportJobService:
 
         return recovered
 
+    def get_failed_items(
+        self,
+        job_uuid: UUID,
+    ) -> tuple[FailedImportItem, ...]:
+        """Return structured failed items for one terminal job."""
+        job = self.get_job(job_uuid)
+
+        if job.status not in {
+            ImportJobStatus.FAILED,
+            ImportJobStatus.PARTIALLY_FAILED,
+        }:
+            raise ImportJobStateError(
+                "only failed or partially failed import jobs "
+                "expose failed items"
+            )
+
+        try:
+            return extract_failed_items(job.result_json)
+        except FailedImportJobResultError as exc:
+            raise ImportJobStateError(str(exc)) from exc
 
     def retry_failed_items(
         self,
@@ -338,7 +359,7 @@ class EurLexImportJobService:
             )
 
         try:
-            failed_celex = extract_failed_celex(
+            failed_items = extract_failed_items(
                 original.result_json
             )
         except FailedImportJobResultError as exc:
@@ -346,15 +367,15 @@ class EurLexImportJobService:
 
         identifiers: list[CelexIdentifier] = []
 
-        for value in failed_celex:
+        for item in failed_items:
             try:
                 identifiers.append(
-                    CelexIdentifier.parse(value)
+                    CelexIdentifier.parse(item.celex)
                 )
             except (TypeError, ValueError) as exc:
                 raise ImportJobStateError(
                     "failed item contains an invalid "
-                    f"CELEX identifier: {value}"
+                    f"CELEX identifier: {item.celex}"
                 ) from exc
 
         retried = ImportJob.create(
@@ -368,6 +389,7 @@ class EurLexImportJobService:
         self._repository.save(retried)
 
         return retried
+
     def search_jobs(
         self,
         criteria: ImportJobSearchCriteria,

@@ -44,6 +44,26 @@ class ImportJobResponse(BaseModel):
     error_detail: str | None
 
 
+class FailedImportItemResponse(BaseModel):
+    """Represent one failed import result item."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    celex: str
+    error_code: str | None
+    detail: str | None
+
+
+class FailedImportItemsResponse(BaseModel):
+    """Represent all failed items for one import job."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    job_uuid: UUID
+    count: int
+    items: list[FailedImportItemResponse]
+
+
 class StaleImportJobResponse(BaseModel):
     """Represent one stale running import job."""
 

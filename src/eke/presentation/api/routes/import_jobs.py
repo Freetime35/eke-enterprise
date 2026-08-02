@@ -43,6 +43,10 @@ from eke.presentation.api.schemas import (
     StaleImportJobReportResponse,
     StaleImportJobResponse,
 )
+from eke.presentation.api.schemas.import_jobs import (
+    FailedImportItemResponse,
+    FailedImportItemsResponse,
+)
 
 router = APIRouter(
     prefix="/imports/eurlex/jobs",
@@ -196,7 +200,6 @@ def get_import_job_metrics(
 def get_import_job_duration_statistics(
     service: ImportJobServiceDependency,
 ) -> ImportJobDurationStatisticsResponse:
-    """Return duration statistics for completed executions."""
     statistics = service.get_duration_statistics()
 
     return ImportJobDurationStatisticsResponse(
@@ -219,7 +222,6 @@ def get_stale_import_jobs(
         Query(ge=1, le=604800),
     ] = 3600,
 ) -> StaleImportJobReportResponse:
-    """Return running jobs older than the threshold."""
     report = service.get_stale_jobs(
         threshold_seconds=threshold_seconds
     )
@@ -248,6 +250,43 @@ def get_import_job(
 ) -> ImportJobResponse:
     return _to_response(
         _get_job(service, job_uuid)
+    )
+
+
+@router.get(
+    "/{job_uuid}/failed-items",
+    response_model=FailedImportItemsResponse,
+    summary="Get failed EUR-Lex import job items",
+)
+def get_failed_import_job_items(
+    job_uuid: UUID,
+    service: ImportJobServiceDependency,
+) -> FailedImportItemsResponse:
+    """Return structured failed items for one import job."""
+    try:
+        items = service.get_failed_items(job_uuid)
+    except ImportJobNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except ImportJobStateError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    return FailedImportItemsResponse(
+        job_uuid=job_uuid,
+        count=len(items),
+        items=[
+            FailedImportItemResponse(
+                celex=item.celex,
+                error_code=item.error_code,
+                detail=item.detail,
+            )
+            for item in items
+        ],
     )
 
 
@@ -344,7 +383,6 @@ def retry_failed_import_job_items(
     service: ImportJobServiceDependency,
     response: Response,
 ) -> ImportJobResponse:
-    """Create a new job containing only failed CELEX items."""
     retried = _transition(
         service.retry_failed_items,
         job_uuid,
@@ -370,7 +408,6 @@ def recover_stale_import_job(
         Query(ge=1, le=604800),
     ] = 3600,
 ) -> ImportJobResponse:
-    """Mark one stale running job as failed."""
     try:
         recovered = service.recover_stale_job(
             job_uuid,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from json import JSONDecodeError, loads
 from typing import Any
 
@@ -10,10 +11,39 @@ class FailedImportJobResultError(ValueError):
     """Raised when persisted import-job results are unusable."""
 
 
-def extract_failed_celex(
+@dataclass(frozen=True, slots=True)
+class FailedImportItem:
+    """Represent one failed item from a persisted bulk result."""
+
+    celex: str
+    error_code: str | None
+    detail: str | None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.celex, str):
+            raise TypeError("celex must be a string")
+        if not self.celex.strip():
+            raise ValueError("celex must not be empty")
+        if (
+            self.error_code is not None
+            and not isinstance(self.error_code, str)
+        ):
+            raise TypeError(
+                "error_code must be a string or None"
+            )
+        if (
+            self.detail is not None
+            and not isinstance(self.detail, str)
+        ):
+            raise TypeError(
+                "detail must be a string or None"
+            )
+
+
+def extract_failed_items(
     result_json: str | None,
-) -> tuple[str, ...]:
-    """Return unique CELEX identifiers whose item status is FAILED."""
+) -> tuple[FailedImportItem, ...]:
+    """Return structured FAILED items from persisted results."""
     if result_json is None:
         raise FailedImportJobResultError(
             "import job has no persisted item results"
@@ -35,20 +65,22 @@ def extract_failed_celex(
             "import job result payload must be a list"
         )
 
-    failed: list[str] = []
+    failed: list[FailedImportItem] = []
+    seen: set[str] = set()
 
-    for index, item in enumerate(payload):
-        if not isinstance(item, dict):
+    for index, value in enumerate(payload):
+        if not isinstance(value, dict):
             raise FailedImportJobResultError(
                 f"import job result item {index} "
                 "must be an object"
             )
 
-        status = item.get("status")
-        celex = item.get("celex")
-
-        if status != "FAILED":
+        if value.get("status") != "FAILED":
             continue
+
+        celex = value.get("celex")
+        error_code = value.get("error_code")
+        detail = value.get("detail")
 
         if (
             not isinstance(celex, str)
@@ -58,15 +90,50 @@ def extract_failed_celex(
                 f"failed result item {index} "
                 "must define celex"
             )
+        if (
+            error_code is not None
+            and not isinstance(error_code, str)
+        ):
+            raise FailedImportJobResultError(
+                f"failed result item {index} "
+                "has invalid error_code"
+            )
+        if (
+            detail is not None
+            and not isinstance(detail, str)
+        ):
+            raise FailedImportJobResultError(
+                f"failed result item {index} "
+                "has invalid detail"
+            )
 
         normalized = celex.strip().upper()
 
-        if normalized not in failed:
-            failed.append(normalized)
+        if normalized in seen:
+            continue
+
+        seen.add(normalized)
+        failed.append(
+            FailedImportItem(
+                celex=normalized,
+                error_code=error_code,
+                detail=detail,
+            )
+        )
 
     if not failed:
         raise FailedImportJobResultError(
-            "import job has no failed items to retry"
+            "import job has no failed items"
         )
 
     return tuple(failed)
+
+
+def extract_failed_celex(
+    result_json: str | None,
+) -> tuple[str, ...]:
+    """Return unique CELEX values for backward compatibility."""
+    return tuple(
+        item.celex
+        for item in extract_failed_items(result_json)
+    )
