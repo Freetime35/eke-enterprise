@@ -176,6 +176,16 @@ from eke.application.eurlex.metadata import (
     EurLexTitle,
 )
 from eke.application.eurlex.parser import EurLexMetadataParser
+from eke.application.eurlex.quantitative_threshold_extractor import (
+    EurLexQuantitativeThresholdExtractor,
+)
+from eke.application.eurlex.quantitative_thresholds import (
+    EurLexQuantitativeComparator,
+    EurLexQuantitativeThreshold,
+    EurLexQuantitativeThresholds,
+    EurLexQuantitativeUnitKind,
+    normalize_quantitative_thresholds,
+)
 from eke.application.eurlex.regulatory_families import (
     EurLexRegulatoryFamily,
     EurLexRegulatoryFamilyMatch,
@@ -235,6 +245,12 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "normalize_quantitative_thresholds",
+    "EurLexQuantitativeUnitKind",
+    "EurLexQuantitativeThresholds",
+    "EurLexQuantitativeThresholdExtractor",
+    "EurLexQuantitativeThreshold",
+    "EurLexQuantitativeComparator",
     "normalize_temporal_constraints",
     "EurLexTemporalUnit",
     "EurLexTemporalRelation",
