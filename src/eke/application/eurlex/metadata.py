@@ -25,6 +25,9 @@ from eke.application.eurlex.regulatory_families import (
 from eke.application.eurlex.titles import (
     EurLexTitleKind,
 )
+from eke.application.eurlex.version_lineage import (
+    EurLexVersionLineage,
+)
 from eke.domain.identity import CelexIdentifier
 from eke.domain.localization import LanguageCode
 
@@ -141,6 +144,10 @@ class EurLexMetadata:
         EurLexAmendmentEvent,
         ...,
     ] = ()
+    version_lineage: tuple[
+        EurLexVersionLineage,
+        ...,
+    ] = ()
     legal_references: tuple[
         EurLexLegalReference,
         ...,
@@ -216,6 +223,18 @@ class EurLexMetadata:
             raise TypeError(
                 "official_journal must be an "
                 "EurLexOfficialJournalReference or None"
+            )
+
+        if any(
+            not isinstance(
+                entry,
+                EurLexVersionLineage,
+            )
+            for entry in self.version_lineage
+        ):
+            raise TypeError(
+                "version_lineage must contain "
+                "EurLexVersionLineage values"
             )
 
         if any(

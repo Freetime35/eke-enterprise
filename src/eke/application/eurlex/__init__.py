@@ -111,8 +111,20 @@ from eke.application.eurlex.titles import (
     EurLexTitleKind,
     title_kind_from_predicate,
 )
+from eke.application.eurlex.version_lineage import (
+    EurLexVersionIdentifier,
+    EurLexVersionLineage,
+    EurLexVersionLineageKind,
+    normalize_version_lineage,
+    version_lineage_kind_from_predicate,
+)
 
 __all__ = [
+    "EurLexVersionIdentifier",
+    "version_lineage_kind_from_predicate",
+    "normalize_version_lineage",
+    "EurLexVersionLineageKind",
+    "EurLexVersionLineage",
     "normalize_legal_references",
     "legal_reference_kind_from_predicate",
     "EurLexLegalReferenceKind",

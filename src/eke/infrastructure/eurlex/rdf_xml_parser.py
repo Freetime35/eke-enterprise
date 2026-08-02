@@ -40,6 +40,13 @@ from eke.application.eurlex.relationship_mapper import (
 from eke.application.eurlex.titles import (
     title_kind_from_predicate,
 )
+from eke.application.eurlex.version_lineage import (
+    EurLexVersionIdentifier,
+    EurLexVersionLineage,
+    EurLexVersionLineageKind,
+    normalize_version_lineage,
+    version_lineage_kind_from_predicate,
+)
 from eke.domain.identity import CelexIdentifier
 from eke.domain.localization import LanguageCode
 
@@ -176,6 +183,21 @@ _LEGAL_REFERENCE_ARTICLE_NAMES = frozenset(
         "article",
         "article_label",
         "reference_article",
+    }
+)
+
+_VERSION_LINEAGE_CONSOLIDATES_NAMES = frozenset(
+    {
+        "consolidates_celex",
+        "consolidates",
+        "base_act_celex",
+    }
+)
+_VERSION_LINEAGE_DATE_NAMES = frozenset(
+    {
+        "consolidation_date",
+        "date_consolidation",
+        "version_date",
     }
 )
 
@@ -352,6 +374,9 @@ class RdfXmlEurLexMetadataParser:
             ),
             legal_references=(
                 self._parse_legal_references(root)
+            ),
+            version_lineage=(
+                self._parse_version_lineage(root)
             ),
             regulatory_families=detect_regulatory_families(
                 parsed_celex or document.celex_identifier,
@@ -601,6 +626,93 @@ class RdfXmlEurLexMetadataParser:
 
         return normalize_legal_references(
             tuple(references)
+        )
+
+    @staticmethod
+    def _parse_version_lineage(
+        root: ElementTree.Element,
+    ) -> tuple[EurLexVersionLineage, ...]:
+        entries: list[EurLexVersionLineage] = []
+
+        for element in root.iter():
+            predicate = _local_name(element.tag)
+            kind = version_lineage_kind_from_predicate(
+                predicate
+            )
+            if kind is None:
+                continue
+
+            raw_identifier = _element_value(element)
+            if raw_identifier is None:
+                continue
+
+            if (
+                kind
+                is EurLexVersionLineageKind.CONSOLIDATED_VERSION
+            ):
+                try:
+                    version_identifier = (
+                        EurLexVersionIdentifier.parse(
+                            raw_identifier
+                            .rstrip("/")
+                            .rsplit("/", maxsplit=1)[-1]
+                        )
+                    )
+                except ValueError:
+                    continue
+
+                base_act = _first_nested_celex(
+                    element,
+                    _VERSION_LINEAGE_CONSOLIDATES_NAMES,
+                )
+                if base_act is None:
+                    continue
+
+                explicit_date = _first_nested_date(
+                    element,
+                    _VERSION_LINEAGE_DATE_NAMES,
+                )
+                consolidation_date = (
+                    explicit_date
+                    or version_identifier.consolidation_date
+                )
+                if (
+                    consolidation_date
+                    != version_identifier.consolidation_date
+                ):
+                    continue
+
+                entries.append(
+                    EurLexVersionLineage(
+                        kind=kind,
+                        version_identifier=(
+                            version_identifier
+                        ),
+                        base_act=base_act,
+                        consolidation_date=(
+                            consolidation_date
+                        ),
+                        source_predicate=predicate,
+                    )
+                )
+                continue
+
+            act_celex = _parse_celex_reference(
+                raw_identifier
+            )
+            if act_celex is None:
+                continue
+
+            entries.append(
+                EurLexVersionLineage(
+                    kind=kind,
+                    act_celex=act_celex,
+                    source_predicate=predicate,
+                )
+            )
+
+        return normalize_version_lineage(
+            tuple(entries)
         )
 
     @staticmethod
