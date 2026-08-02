@@ -5,6 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
+from eke.application.eurlex.corrigenda import (
+    EurLexCorrigendum,
+)
 from eke.application.eurlex.enrichment import (
     EurLexClassification,
     EurLexRelationship,
@@ -154,6 +157,11 @@ class EurLexMetadata:
     ] = ()
     regulatory_families: tuple[
         EurLexRegulatoryFamilyMatch,
+        ...,
+    ] = ()
+
+    corrigenda: tuple[
+        EurLexCorrigendum,
         ...,
     ] = ()
 
@@ -315,6 +323,18 @@ class EurLexMetadata:
                 raise TypeError(
                     f"{name} must contain non-empty strings"
                 )
+
+        if any(
+            not isinstance(
+                corrigendum,
+                EurLexCorrigendum,
+            )
+            for corrigendum in self.corrigenda
+        ):
+            raise TypeError(
+                "corrigenda must contain "
+                "EurLexCorrigendum values"
+            )
 
     def assess_completeness(
         self,

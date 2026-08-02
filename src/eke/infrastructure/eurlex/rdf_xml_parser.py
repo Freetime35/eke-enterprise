@@ -16,6 +16,11 @@ from eke.application.eurlex import (
     EurLexTitle,
     EurLexUnsupportedMediaTypeError,
 )
+from eke.application.eurlex.corrigenda import (
+    EurLexCorrigendum,
+    EurLexCorrigendumIdentifier,
+    normalize_corrigenda,
+)
 from eke.application.eurlex.institutional_provenance import (
     normalize_institutions,
 )
@@ -201,6 +206,21 @@ _VERSION_LINEAGE_DATE_NAMES = frozenset(
     }
 )
 
+_CORRIGENDUM_PREDICATES = frozenset(
+    {
+        "corrigendum",
+        "work_has_corrigendum",
+        "resource_legal_has_corrigendum",
+    }
+)
+_CORRIGENDUM_PUBLICATION_DATE_NAMES = frozenset(
+    {
+        "publication_date",
+        "date_publication",
+        "corrigendum_publication_date",
+    }
+)
+
 _LANGUAGE_NAMES = frozenset(
     {
         "expression_uses_language",
@@ -381,6 +401,9 @@ class RdfXmlEurLexMetadataParser:
             regulatory_families=detect_regulatory_families(
                 parsed_celex or document.celex_identifier,
                 titles,
+            ),
+            corrigenda=(
+                self._parse_corrigenda(root)
             ),
         )
 
@@ -713,6 +736,52 @@ class RdfXmlEurLexMetadataParser:
 
         return normalize_version_lineage(
             tuple(entries)
+        )
+
+    @staticmethod
+    def _parse_corrigenda(
+        root: ElementTree.Element,
+    ) -> tuple[EurLexCorrigendum, ...]:
+        corrigenda: list[EurLexCorrigendum] = []
+
+        for element in root.iter():
+            predicate = _local_name(element.tag)
+            if predicate not in _CORRIGENDUM_PREDICATES:
+                continue
+
+            raw_identifier = _element_value(element)
+            if raw_identifier is None:
+                continue
+
+            candidate = (
+                raw_identifier
+                .rstrip("/")
+                .rsplit("/", maxsplit=1)[-1]
+            )
+            try:
+                identifier = (
+                    EurLexCorrigendumIdentifier.parse(
+                        candidate
+                    )
+                )
+            except ValueError:
+                continue
+
+            publication_date = _first_nested_date(
+                element,
+                _CORRIGENDUM_PUBLICATION_DATE_NAMES,
+            )
+
+            corrigenda.append(
+                EurLexCorrigendum(
+                    identifier=identifier,
+                    publication_date=publication_date,
+                    source_predicate=predicate,
+                )
+            )
+
+        return normalize_corrigenda(
+            tuple(corrigenda)
         )
 
     @staticmethod
