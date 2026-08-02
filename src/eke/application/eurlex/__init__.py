@@ -122,6 +122,12 @@ from eke.application.eurlex.legal_permissions import (
     EurLexLegalPermissions,
     normalize_legal_permissions,
 )
+from eke.application.eurlex.legal_prohibitions import (
+    EurLexLegalProhibition,
+    EurLexLegalProhibitionKind,
+    EurLexLegalProhibitions,
+    normalize_legal_prohibitions,
+)
 from eke.application.eurlex.legal_references import (
     EurLexLegalReference,
     EurLexLegalReferenceKind,
@@ -162,6 +168,10 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "normalize_legal_prohibitions",
+    "EurLexLegalProhibitions",
+    "EurLexLegalProhibitionKind",
+    "EurLexLegalProhibition",
     "normalize_legal_permissions",
     "EurLexLegalPermissions",
     "EurLexLegalPermissionKind",

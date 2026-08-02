@@ -27,6 +27,10 @@ from eke.infrastructure.eurlex.legal_permission_parser import (
     EurLexLegalPermissionParseError,
     EurLexLegalPermissionParser,
 )
+from eke.infrastructure.eurlex.legal_prohibition_parser import (
+    EurLexLegalProhibitionParseError,
+    EurLexLegalProhibitionParser,
+)
 from eke.infrastructure.eurlex.sqlalchemy_import_job_repository import (
     SQLAlchemyImportJobRepository,
 )
@@ -39,6 +43,8 @@ RdfXmlEurLexMetadataParser = (
 )
 
 __all__ = [
+    "EurLexLegalProhibitionParser",
+    "EurLexLegalProhibitionParseError",
     "EurLexLegalPermissionParser",
     "EurLexLegalPermissionParseError",
     "EurLexLegalObligationParser",
