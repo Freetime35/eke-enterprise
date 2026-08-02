@@ -334,6 +334,30 @@ def retry_import_job(
 
 
 @router.post(
+    "/{job_uuid}/retry-failed",
+    response_model=ImportJobResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Retry failed EUR-Lex import job items",
+)
+def retry_failed_import_job_items(
+    job_uuid: UUID,
+    service: ImportJobServiceDependency,
+    response: Response,
+) -> ImportJobResponse:
+    """Create a new job containing only failed CELEX items."""
+    retried = _transition(
+        service.retry_failed_items,
+        job_uuid,
+    )
+
+    response.headers["Location"] = (
+        f"/imports/eurlex/jobs/{retried.job_uuid}"
+    )
+
+    return retried
+
+
+@router.post(
     "/{job_uuid}/recover-stale",
     response_model=ImportJobResponse,
     summary="Recover a stale EUR-Lex import job",

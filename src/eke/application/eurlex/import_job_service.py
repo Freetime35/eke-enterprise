@@ -15,6 +15,10 @@ from eke.application.eurlex.bulk_import import (
 from eke.application.eurlex.import_job_duration_metrics import (
     ImportJobDurationStatistics,
 )
+from eke.application.eurlex.import_job_failed_items import (
+    FailedImportJobResultError,
+    extract_failed_celex,
+)
 from eke.application.eurlex.import_job_lineage import (
     ImportJobLineage,
 )
@@ -316,6 +320,54 @@ class EurLexImportJobService:
 
         return recovered
 
+
+    def retry_failed_items(
+        self,
+        job_uuid: UUID,
+    ) -> ImportJob:
+        """Create a pending job containing only failed CELEX items."""
+        original = self.get_job(job_uuid)
+
+        if original.status not in {
+            ImportJobStatus.FAILED,
+            ImportJobStatus.PARTIALLY_FAILED,
+        }:
+            raise ImportJobStateError(
+                "only failed or partially failed import jobs "
+                "can retry failed items"
+            )
+
+        try:
+            failed_celex = extract_failed_celex(
+                original.result_json
+            )
+        except FailedImportJobResultError as exc:
+            raise ImportJobStateError(str(exc)) from exc
+
+        identifiers: list[CelexIdentifier] = []
+
+        for value in failed_celex:
+            try:
+                identifiers.append(
+                    CelexIdentifier.parse(value)
+                )
+            except (TypeError, ValueError) as exc:
+                raise ImportJobStateError(
+                    "failed item contains an invalid "
+                    f"CELEX identifier: {value}"
+                ) from exc
+
+        retried = ImportJob.create(
+            tuple(
+                identifier.value
+                for identifier in identifiers
+            ),
+            created_at=self._now(),
+            retried_from_job_uuid=original.job_uuid,
+        )
+        self._repository.save(retried)
+
+        return retried
     def search_jobs(
         self,
         criteria: ImportJobSearchCriteria,
