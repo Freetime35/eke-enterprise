@@ -26,6 +26,11 @@ from eke.application.eurlex.legal_lifecycle import (
     normalize_amendment_events,
     normalize_lifecycle_events,
 )
+from eke.application.eurlex.legal_references import (
+    EurLexLegalReference,
+    legal_reference_kind_from_predicate,
+    normalize_legal_references,
+)
 from eke.application.eurlex.regulatory_families import (
     detect_regulatory_families,
 )
@@ -163,6 +168,14 @@ _AMENDMENT_EFFECTIVE_DATE_NAMES = frozenset(
         "effective_on",
         "date_effect",
         "date_effective",
+    }
+)
+
+_LEGAL_REFERENCE_ARTICLE_NAMES = frozenset(
+    {
+        "article",
+        "article_label",
+        "reference_article",
     }
 )
 
@@ -336,6 +349,9 @@ class RdfXmlEurLexMetadataParser:
             ),
             amendment_events=(
                 self._parse_amendment_events(root)
+            ),
+            legal_references=(
+                self._parse_legal_references(root)
             ),
             regulatory_families=detect_regulatory_families(
                 parsed_celex or document.celex_identifier,
@@ -534,6 +550,57 @@ class RdfXmlEurLexMetadataParser:
 
         return normalize_amendment_events(
             tuple(events)
+        )
+
+    @staticmethod
+    def _parse_legal_references(
+        root: ElementTree.Element,
+    ) -> tuple[EurLexLegalReference, ...]:
+        references: list[EurLexLegalReference] = []
+
+        for element in root.iter():
+            predicate = _local_name(element.tag)
+            kind = legal_reference_kind_from_predicate(
+                predicate
+            )
+            if kind is None:
+                continue
+
+            raw_target = _element_value(element)
+            target_celex = _parse_celex_reference(
+                raw_target
+            )
+            target_uri = (
+                raw_target
+                if (
+                    raw_target is not None
+                    and target_celex is None
+                )
+                else None
+            )
+            article = _first_nested_text(
+                element,
+                _LEGAL_REFERENCE_ARTICLE_NAMES,
+            )
+
+            if (
+                target_celex is None
+                and target_uri is None
+            ):
+                continue
+
+            references.append(
+                EurLexLegalReference(
+                    kind=kind,
+                    target_celex=target_celex,
+                    target_uri=target_uri,
+                    article=article,
+                    source_predicate=predicate,
+                )
+            )
+
+        return normalize_legal_references(
+            tuple(references)
         )
 
     @staticmethod
@@ -748,6 +815,19 @@ def _first_nested_date(
             raise EurLexMalformedMetadataError(
                 "metadata contains an invalid amendment date"
             ) from exc
+
+    return None
+
+def _first_nested_text(
+    root: ElementTree.Element,
+    names: frozenset[str],
+) -> str | None:
+    for element in root.iter():
+        if _local_name(element.tag) not in names:
+            continue
+        value = _text_value(element)
+        if value is not None:
+            return value
 
     return None
 

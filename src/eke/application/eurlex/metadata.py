@@ -16,6 +16,9 @@ from eke.application.eurlex.legal_lifecycle import (
     EurLexAmendmentEvent,
     EurLexLegalLifecycleEvent,
 )
+from eke.application.eurlex.legal_references import (
+    EurLexLegalReference,
+)
 from eke.application.eurlex.regulatory_families import (
     EurLexRegulatoryFamilyMatch,
 )
@@ -138,6 +141,10 @@ class EurLexMetadata:
         EurLexAmendmentEvent,
         ...,
     ] = ()
+    legal_references: tuple[
+        EurLexLegalReference,
+        ...,
+    ] = ()
     regulatory_families: tuple[
         EurLexRegulatoryFamilyMatch,
         ...,
@@ -209,6 +216,18 @@ class EurLexMetadata:
             raise TypeError(
                 "official_journal must be an "
                 "EurLexOfficialJournalReference or None"
+            )
+
+        if any(
+            not isinstance(
+                reference,
+                EurLexLegalReference,
+            )
+            for reference in self.legal_references
+        ):
+            raise TypeError(
+                "legal_references must contain "
+                "EurLexLegalReference values"
             )
 
         if any(
