@@ -110,6 +110,12 @@ from eke.application.eurlex.legal_lifecycle import (
     normalize_amendment_events,
     normalize_lifecycle_events,
 )
+from eke.application.eurlex.legal_obligations import (
+    EurLexLegalObligation,
+    EurLexLegalObligationKind,
+    EurLexLegalObligations,
+    normalize_legal_obligations,
+)
 from eke.application.eurlex.legal_references import (
     EurLexLegalReference,
     EurLexLegalReferenceKind,
@@ -150,6 +156,10 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "normalize_legal_obligations",
+    "EurLexLegalObligations",
+    "EurLexLegalObligationKind",
+    "EurLexLegalObligation",
     "normalize_legal_definitions",
     "EurLexLegalDefinitions",
     "EurLexLegalDefinition",

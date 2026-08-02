@@ -19,6 +19,10 @@ from eke.infrastructure.eurlex.legal_definition_parser import (
     EurLexLegalDefinitionParseError,
     EurLexLegalDefinitionParser,
 )
+from eke.infrastructure.eurlex.legal_obligation_parser import (
+    EurLexLegalObligationParseError,
+    EurLexLegalObligationParser,
+)
 from eke.infrastructure.eurlex.sqlalchemy_import_job_repository import (
     SQLAlchemyImportJobRepository,
 )
@@ -31,6 +35,8 @@ RdfXmlEurLexMetadataParser = (
 )
 
 __all__ = [
+    "EurLexLegalObligationParser",
+    "EurLexLegalObligationParseError",
     "EurLexLegalDefinitionParser",
     "EurLexLegalDefinitionParseError",
     "XmlEurLexComplexContentParser",
