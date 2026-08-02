@@ -190,6 +190,15 @@ from eke.application.eurlex.resource_mapper import (
     map_resource_type,
     resource_from_eurlex,
 )
+from eke.application.eurlex.rule_qualifier_extractor import (
+    EurLexRuleQualifierExtractor,
+)
+from eke.application.eurlex.rule_qualifiers import (
+    EurLexRuleQualifier,
+    EurLexRuleQualifierKind,
+    EurLexRuleQualifierMarker,
+    EurLexRuleQualifiers,
+)
 from eke.application.eurlex.titles import (
     EurLexTitleKind,
     title_kind_from_predicate,
@@ -203,6 +212,11 @@ from eke.application.eurlex.version_lineage import (
 )
 
 __all__ = [
+    "EurLexRuleQualifiers",
+    "EurLexRuleQualifierMarker",
+    "EurLexRuleQualifierKind",
+    "EurLexRuleQualifierExtractor",
+    "EurLexRuleQualifier",
     "EurLexLegalActors",
     "EurLexLegalActorMention",
     "EurLexLegalActorKind",
