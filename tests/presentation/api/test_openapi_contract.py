@@ -55,6 +55,7 @@ EXPECTED_PATHS = {
     "/imports/eurlex/jobs/metrics",
     "/imports/eurlex/jobs/durations",
     "/imports/eurlex/jobs/stale",
+    "/imports/eurlex/jobs/{job_uuid}/recover-stale",
 }
 
 
@@ -210,6 +211,10 @@ def test_operation_ids_are_unique_and_stable(
     )
     assert (
     "eurlex_import_jobs_get_stale_import_jobs"
+    in operation_ids
+    )
+    assert (
+    "eurlex_import_jobs_recover_stale_import_job"
     in operation_ids
     )
 

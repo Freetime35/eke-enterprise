@@ -70,12 +70,17 @@ def create_import_job(
     response: Response,
 ) -> ImportJobResponse:
     identifiers: list[CelexIdentifier] = []
+
     for index, value in enumerate(request.celex):
         try:
-            identifiers.append(CelexIdentifier.parse(value))
+            identifiers.append(
+                CelexIdentifier.parse(value)
+            )
         except (TypeError, ValueError) as exc:
             raise HTTPException(
-                status_code=422,
+                status_code=(
+                    status.HTTP_422_UNPROCESSABLE_CONTENT
+                ),
                 detail={
                     "index": index,
                     "celex": value,
@@ -87,6 +92,7 @@ def create_import_job(
     response.headers["Location"] = (
         f"/imports/eurlex/jobs/{job.job_uuid}"
     )
+
     return _to_response(job)
 
 
@@ -108,8 +114,14 @@ def search_import_jobs(
         datetime | None,
         Query(),
     ] = None,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    offset: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[
+        int,
+        Query(ge=1, le=100),
+    ] = 20,
+    offset: Annotated[
+        int,
+        Query(ge=0),
+    ] = 0,
 ) -> ImportJobSearchResponse:
     try:
         criteria = ImportJobSearchCriteria(
@@ -120,11 +132,20 @@ def search_import_jobs(
             offset=offset,
         )
     except (TypeError, ValueError) as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=(
+                status.HTTP_422_UNPROCESSABLE_CONTENT
+            ),
+            detail=str(exc),
+        ) from exc
 
     page = service.search_jobs(criteria)
+
     return ImportJobSearchResponse(
-        items=[_to_response(item) for item in page.items],
+        items=[
+            _to_response(item)
+            for item in page.items
+        ],
         total=page.total,
         limit=page.limit,
         offset=page.offset,
@@ -139,6 +160,7 @@ def summarize_import_jobs(
     service: ImportJobServiceDependency,
 ) -> ImportJobStatusSummaryResponse:
     summary = service.summarize_jobs()
+
     return ImportJobStatusSummaryResponse(
         total=summary.total,
         counts=summary.counts,
@@ -153,6 +175,7 @@ def get_import_job_metrics(
     service: ImportJobServiceDependency,
 ) -> ImportJobOperationalMetricsResponse:
     metrics = service.get_operational_metrics()
+
     return ImportJobOperationalMetricsResponse(
         total=metrics.total,
         active=metrics.active,
@@ -168,11 +191,14 @@ def get_import_job_metrics(
 @router.get(
     "/durations",
     response_model=ImportJobDurationStatisticsResponse,
+    summary="Get EUR-Lex import job duration statistics",
 )
 def get_import_job_duration_statistics(
     service: ImportJobServiceDependency,
 ) -> ImportJobDurationStatisticsResponse:
+    """Return duration statistics for completed executions."""
     statistics = service.get_duration_statistics()
+
     return ImportJobDurationStatisticsResponse(
         sample_count=statistics.sample_count,
         minimum_seconds=statistics.minimum_seconds,
@@ -197,6 +223,7 @@ def get_stale_import_jobs(
     report = service.get_stale_jobs(
         threshold_seconds=threshold_seconds
     )
+
     return StaleImportJobReportResponse(
         threshold_seconds=report.threshold_seconds,
         observed_at=report.observed_at,
@@ -219,7 +246,9 @@ def get_import_job(
     job_uuid: UUID,
     service: ImportJobServiceDependency,
 ) -> ImportJobResponse:
-    return _to_response(_get_job(service, job_uuid))
+    return _to_response(
+        _get_job(service, job_uuid)
+    )
 
 
 @router.get(
@@ -233,15 +262,24 @@ def get_import_job_lineage(
     try:
         lineage = service.get_job_lineage(job_uuid)
     except ImportJobNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
     except ImportJobLineageError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
 
     return ImportJobLineageResponse(
         root_job_uuid=lineage.root.job_uuid,
         current_job_uuid=lineage.current.job_uuid,
         depth=lineage.depth,
-        items=[_to_response(item) for item in lineage.items],
+        items=[
+            _to_response(item)
+            for item in lineage.items
+        ],
     )
 
 
@@ -253,7 +291,10 @@ def run_import_job(
     job_uuid: UUID,
     service: ImportJobServiceDependency,
 ) -> ImportJobResponse:
-    return _transition(service.run_job, job_uuid)
+    return _transition(
+        service.run_job,
+        job_uuid,
+    )
 
 
 @router.post(
@@ -264,7 +305,10 @@ def cancel_import_job(
     job_uuid: UUID,
     service: ImportJobServiceDependency,
 ) -> ImportJobResponse:
-    return _transition(service.cancel_job, job_uuid)
+    return _transition(
+        service.cancel_job,
+        job_uuid,
+    )
 
 
 @router.post(
@@ -277,11 +321,49 @@ def retry_import_job(
     service: ImportJobServiceDependency,
     response: Response,
 ) -> ImportJobResponse:
-    retried = _transition(service.retry_job, job_uuid)
+    retried = _transition(
+        service.retry_job,
+        job_uuid,
+    )
+
     response.headers["Location"] = (
         f"/imports/eurlex/jobs/{retried.job_uuid}"
     )
+
     return retried
+
+
+@router.post(
+    "/{job_uuid}/recover-stale",
+    response_model=ImportJobResponse,
+    summary="Recover a stale EUR-Lex import job",
+)
+def recover_stale_import_job(
+    job_uuid: UUID,
+    service: ImportJobServiceDependency,
+    threshold_seconds: Annotated[
+        int,
+        Query(ge=1, le=604800),
+    ] = 3600,
+) -> ImportJobResponse:
+    """Mark one stale running job as failed."""
+    try:
+        recovered = service.recover_stale_job(
+            job_uuid,
+            threshold_seconds=threshold_seconds,
+        )
+    except ImportJobNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except ImportJobStateError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    return _to_response(recovered)
 
 
 @router.post(
@@ -295,18 +377,23 @@ def submit_import_job(
     worker: ImportJobWorkerDependency,
 ) -> ImportJobSubmissionResponse:
     job = _get_job(service, job_uuid)
+
     if job.status is not ImportJobStatus.PENDING:
         raise HTTPException(
-            status_code=409,
-            detail="only pending import jobs can be submitted",
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "only pending import jobs can be submitted"
+            ),
         )
+
     if not worker.submit(job_uuid):
         raise HTTPException(
-            status_code=409,
+            status_code=status.HTTP_409_CONFLICT,
             detail="import job is already submitted",
         )
 
     location = f"/imports/eurlex/jobs/{job_uuid}"
+
     return ImportJobSubmissionResponse(
         job_uuid=job_uuid,
         accepted=True,
@@ -319,11 +406,19 @@ def _transition(
     job_uuid: UUID,
 ) -> ImportJobResponse:
     try:
-        return _to_response(transition(job_uuid))
+        return _to_response(
+            transition(job_uuid)
+        )
     except ImportJobNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
     except ImportJobStateError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
 
 
 def _get_job(
@@ -333,13 +428,20 @@ def _get_job(
     try:
         return service.get_job(job_uuid)
     except ImportJobNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
 
 
-def _to_response(job: ImportJob) -> ImportJobResponse:
+def _to_response(
+    job: ImportJob,
+) -> ImportJobResponse:
     results: list[dict[str, Any]] | None = None
+
     if job.result_json is not None:
         parsed = loads(job.result_json)
+
         if isinstance(parsed, list):
             results = [
                 item
